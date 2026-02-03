@@ -170,7 +170,7 @@
 
         #gameOver h1 {
             position: absolute;
-            top: 42%;
+            top:50%;
             left: 50%;
             transform: translateX(-50%);
             font-size: 180px;
@@ -423,7 +423,7 @@
             display: flex;
             gap: 15px;
             margin-top: 20px;
-        }
+        } 
 
         #settings .button-group button {
             flex: 1;
@@ -477,15 +477,15 @@
         <img id="logo" src="assets/logo.webp" alt="Logo">
         
         <div id="timeDisplay">
-            TIME: <span id="timeLeft">25</span>
+            MASA: <span id="timeLeft">25</span>
         </div>
 
         <div id="totalDisplay">
-            TOTAL: <span id="score">0</span>
+            SKOR: <span id="score">0</span>
         </div>
 
         <div id="ui" style="display: none;">
-            <div>Score: <span id="scoreOld">0</span></div>
+            <div>Skor: <span id="scoreOld">0</span></div>
             <div>High Score: <span id="highScore">0</span></div>
         </div>
 
@@ -882,6 +882,7 @@
         // Background scroll
         let scrollOffset = 0;
         let floorScrollOffset = 0;
+        let cloudScrollOffset = 0;
 
         // Mouse movement handler
         window.addEventListener('mousemove', (e) => {
@@ -1196,6 +1197,12 @@
             const lineSpacing = 40;
             scrollOffset += gameSpeed;
             if (scrollOffset > lineSpacing) scrollOffset = 0;
+            
+            // Cloud animation
+            cloudScrollOffset += gameSpeed;
+            
+            // Cloud animation
+            cloudScrollOffset += gameSpeed;
 
             for (let i = -lineSpacing; i < canvas.width; i += lineSpacing) {
                 ctx.moveTo(i + scrollOffset, groundY);
@@ -1216,17 +1223,26 @@
             // Simple clouds
             ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
             const cloudPositions = [
-                { x: (scrollOffset * 0.3) % canvas.width, y: 80 },
-                { x: (scrollOffset * 0.2 + 300) % canvas.width, y: 150 },
-                { x: (scrollOffset * 0.25 + 600) % canvas.width, y: 100 }
+                { x: canvas.width - (cloudScrollOffset * 0.3) % (canvas.width + 100), y: 80 },
+                { x: canvas.width - (cloudScrollOffset * 0.2 + 300) % (canvas.width + 100), y: 150 },
+                { x: canvas.width - (cloudScrollOffset * 0.25 + 600) % (canvas.width + 100), y: 100 }
             ];
 
             cloudPositions.forEach(cloud => {
-                ctx.beginPath();
-                ctx.arc(cloud.x, cloud.y, 30, 0, Math.PI * 2);
-                ctx.arc(cloud.x + 25, cloud.y, 35, 0, Math.PI * 2);
-                ctx.arc(cloud.x + 50, cloud.y, 30, 0, Math.PI * 2);
-                ctx.fill();
+                // Draw cloud if it's visible or wrapping around
+                const drawCloud = (xPos) => {
+                    ctx.beginPath();
+                    ctx.arc(xPos, cloud.y, 30, 0, Math.PI * 2);
+                    ctx.arc(xPos + 25, cloud.y, 35, 0, Math.PI * 2);
+                    ctx.arc(xPos + 50, cloud.y, 30, 0, Math.PI * 2);
+                    ctx.fill();
+                };
+                
+                drawCloud(cloud.x);
+                // Draw wrapped cloud if it's off screen
+                if (cloud.x < 0) {
+                    drawCloud(cloud.x + canvas.width + 100);
+                }
             });
         }
 
