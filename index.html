@@ -468,6 +468,39 @@
             background: rgba(0, 0, 0, 0.8);
             transform: scale(1.05);
         }
+
+        .point-popup {
+            position: absolute;
+            font-size: 48px;
+            font-weight: bold;
+            color: #29b5e8;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8), 
+                         0 0 20px rgba(41, 181, 232, 0.6);
+            pointer-events: none;
+            z-index: 100;
+            animation: floatUp 1s ease-out forwards;
+            -webkit-text-stroke: 2px #1B4F91;
+            text-stroke: 2px #1B4F91;
+        }
+
+        .point-popup.negative {
+            color: #FF0000;
+            text-shadow: 3px 3px 6px rgba(0, 0, 0, 0.8), 
+                         0 0 20px rgba(255, 0, 0, 0.6);
+            -webkit-text-stroke: 2px #8B0000;
+            text-stroke: 2px #8B0000;
+        }
+
+        @keyframes floatUp {
+            0% {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) scale(1.3);
+                opacity: 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -859,9 +892,27 @@
         function showPointPopup(x, y, points) {
             const popup = document.createElement('div');
             popup.className = 'point-popup';
-            popup.textContent = '+' + points;
-            popup.style.left = x + 'px';
-            popup.style.top = y + 'px';
+            
+            // Style based on positive or negative points
+            if (points < 0) {
+                popup.classList.add('negative');
+                popup.textContent = points; // Already has minus sign
+            } else {
+                popup.textContent = '+' + points;
+            }
+            
+            // Get canvas position and scale
+            const canvas = document.getElementById('gameCanvas');
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = rect.width / canvas.width;
+            const scaleY = rect.height / canvas.height;
+            
+            // Convert canvas coordinates to screen coordinates
+            const screenX = rect.left + (x * scaleX);
+            const screenY = rect.top + (y * scaleY);
+            
+            popup.style.left = screenX + 'px';
+            popup.style.top = screenY + 'px';
             document.getElementById('gameContainer').appendChild(popup);
             
             setTimeout(() => {
@@ -1073,8 +1124,8 @@
                         score += points;
                         scoreElement.textContent = score;
                         
-                        // Show floating point popup
-                        showPointPopup(obstacle.x + obstacle.width, obstacle.y, points);
+                        // Show floating point popup at collectible center
+                        showPointPopup(obstacle.x + obstacle.width / 2, obstacle.y + obstacle.height / 2, points);
                     }
                 }
             }
