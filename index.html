@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Air Mouse Runner</title>
+    <style>
+        @font-face {
+            font-family: 'Brevia';
+            src: url('assets/font/09BREVIA-BOLD.OTF') format('opentype');
+            font-weight: 700;
+            font-style: normal;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #000;
+            font-family: 'Brevia', 'Arial', sans-serif;
+            font-weight: 700;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+        }
+
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #gameCanvas {
+            display: block;
+            background: #87CEEB;
+            cursor: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        #ui {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+        }
+
+        #logo {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            width: 120px;
+            height: 120px;
+            pointer-events: none;
+        }
+
+        #timeDisplay {
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1B4F91;
+            color: white;
+            padding: 15px 40px;
+            border-radius: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            text-shadow: none;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        #timeDisplay::before {
+            content: '⏳';
+            font-size: 32px;
+        }
+
+        #totalDisplay {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            background: #1B4F91;
+            color: white;
+            padding: 15px 40px;
+            border-radius: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            text-shadow: none;
+            pointer-events: none;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        #totalDisplay::before {
+            content: '✨';
+            font-size: 32px;
+        }
+
+        #timeRemaining {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            color: white;
+            font-size: 48px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+            pointer-events: none;
+            display: none;
+        }
+
+        #timeRemaining.warning {
+            color: #ff6b6b;
+            animation: pulse 0.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        #countdown {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 200px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 0 0 30px rgba(102, 126, 234, 0.8);
+            display: none;
+            animation: countdownPulse 1s ease-in-out;
+        }
+
+        @keyframes countdownPulse {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.2); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+        }
+
+        #gameOver {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('assets/page/score.webp');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        #gameOver h1 {
+            position: absolute;
+            top: 42%;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 180px;
+            font-weight: 900;
+            color: white;
+            margin: 0;
+            -webkit-text-stroke: 12px #1B4F91;
+            text-stroke: 12px #1B4F91;
+            paint-order: stroke fill;
+            letter-spacing: -5px;
+        }
+
+        #scoreDetails {
+            position: absolute;
+            top: 50%;
+            width: 80%;
+            max-width: 600px;
+            display: flex;
+            justify-content: space-around;
+            color: #1B4F91;
+            font-weight: bold;
+        }
+
+        .scoreItem {
+            text-align: center;
+        }
+
+        .scoreLabel {
+            display: none;
+        }
+
+        .scoreValue {
+            font-size: 48px;
+            font-weight: bold;
+            color: #1B4F91;
+        }
+
+        #gameOver button {
+            position: absolute;
+            bottom: 80px;
+            padding: 30px 120px;
+            font-size: 64px;
+            background: #29b5e8;
+            color: white;
+            border: 6px solid white;
+            border-radius: 80px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        #gameOver button:hover {
+            background: #1a9dd1;
+            transform: scale(1.05);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        #welcomeScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 60%;
+        }
+
+        #welcomeScreen button {
+            padding: 30px 120px;
+            font-size: 64px;
+            background: #29b5e8;
+            color: white;
+            border: 6px solid white;
+            border-radius: 80px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            letter-spacing: 2px;
+        }
+
+        #welcomeScreen button:hover {
+            background: #1a9dd1;
+            transform: scale(1.05);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        #instructions {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            display: none;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 100px;
+        }
+
+        #instructions button {
+            padding: 30px 120px;
+            font-size: 64px;
+            background: #29b5e8;
+            color: white;
+            border: 6px solid white;
+            border-radius: 80px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            letter-spacing: 2px;
+        }
+
+        #instructions button:hover {
+            background: #1a9dd1;
+            transform: scale(1.05);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        #settings {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+            display: none;
+        }
+
+        #settings::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        #settings::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+
+        #settings::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 5px;
+        }
+
+        #settings::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+
+        #settings h2 {
+            font-size: 30px;
+            margin-bottom: 20px;
+            color: #667eea;
+            text-align: center;
+        }
+
+        .setting-group {
+            margin: 15px 0;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+
+        .setting-group label {
+            display: block;
+            font-size: 15px;
+            margin-bottom: 8px;
+            color: #a8b3cf;
+        }
+
+        .setting-group input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255, 255, 255, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .setting-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+        }
+
+        .setting-group input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+
+        .setting-value {
+            display: inline-block;
+            float: right;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .preset-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .preset-buttons button {
+            flex: 1;
+            padding: 10px;
+            font-size: 15px;
+            background: rgba(102, 126, 234, 0.3);
+            color: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .preset-buttons button:hover {
+            background: #667eea;
+            transform: translateY(-2px);
+        }
+
+        .preset-buttons button.active {
+            background: #667eea;
+            box-shadow: 0 0 15px rgba(102, 126, 234, 0.5);
+        }
+
+        #settings .button-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        #settings .button-group button {
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        #settings .button-group button:hover {
+            background: #764ba2;
+        }
+
+        #settings .button-group button.secondary {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        #settings .button-group button.secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .settings-btn {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            padding: 15px 30px;
+            font-size: 24px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: 2px solid white;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            z-index: 10;
+        }
+
+        .settings-btn:hover {
+            background: rgba(0, 0, 0, 0.8);
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="1080" height="1920"></canvas>
+        
+        <img id="logo" src="assets/logo.webp" alt="Logo">
+        
+        <div id="timeDisplay">
+            TIME: <span id="timeLeft">25</span>
+        </div>
+
+        <div id="totalDisplay">
+            TOTAL: <span id="score">0</span>
+        </div>
+
+        <div id="ui" style="display: none;">
+            <div>Score: <span id="scoreOld">0</span></div>
+            <div>High Score: <span id="highScore">0</span></div>
+        </div>
+
+        <div id="timeRemaining">
+            <div>Time: <span id="timeLeftOld">25</span>s</div>
+        </div>
+
+        <div id="countdown"></div>
+
+        <div id="welcomeScreen">
+            <button id="welcomeBtn">MULA!</button>
+        </div>
+
+        <div id="instructions">
+            <button id="startBtn">SETERUSNYA</button>
+        </div>
+
+        <button class="settings-btn" id="settingsBtn" style="display: none;">⚙️ Settings</button>
+
+        <div id="settings">
+            <h2>⚙️ Game Settings</h2>
+            
+            <div style="text-align: center; margin-bottom: 20px;">
+                <strong>Difficulty Presets:</strong>
+            </div>
+            <div class="preset-buttons">
+                <button id="easyBtn">Easy</button>
+                <button id="mediumBtn" class="active">Medium</button>
+                <button id="hardBtn">Hard</button>
+            </div>
+
+            <div class="setting-group">
+                <label>
+                    Initial Speed: <span class="setting-value" id="speedValue">5</span>
+                </label>
+                <input type="range" id="speedSlider" min="2" max="10" step="0.5" value="5">
+            </div>
+
+            <div class="setting-group">
+                <label>
+                    Max Speed: <span class="setting-value" id="maxSpeedValue">15</span>
+                </label>
+                <input type="range" id="maxSpeedSlider" min="10" max="25" step="1" value="15">
+            </div>
+
+            <div class="setting-group">
+                <label>
+                    Jump Force: <span class="setting-value" id="jumpForceValue">90</span>
+                </label>
+                <input type="range" id="jumpForceSlider" min="50" max="120" step="5" value="90">
+            </div>
+
+            <div class="setting-group">
+                <label>
+                    Gravity: <span class="setting-value" id="gravityValue">0.3</span>
+                </label>
+                <input type="range" id="gravitySlider" min="0.2" max="1.2" step="0.05" value="0.3">
+            </div>
+
+            <div class="setting-group">
+                <label>
+                    Mouse Sensitivity (Jump Threshold): <span class="setting-value" id="sensitivityValue">7</span>
+                </label>
+                <input type="range" id="sensitivitySlider" min="3" max="15" step="1" value="7">
+            </div>
+
+            <div class="setting-group">
+                <label>
+                    Fall Speed Sensitivity: <span class="setting-value" id="fallSensitivityValue">5</span>
+                </label>
+                <input type="range" id="fallSensitivitySlider" min="2" max="10" step="1" value="5">
+            </div>
+
+            <div class="setting-group">
+                <label>
+                    Obstacle Frequency: <span class="setting-value" id="obstacleFreqValue">Medium</span>
+                </label>
+                <input type="range" id="obstacleFreqSlider" min="60" max="180" step="20" value="120">
+            </div>
+
+            <div class="setting-group">
+                <label>
+                    Fast Fall Multiplier: <span class="setting-value" id="fallMultiplierValue">2.5</span>
+                </label>
+                <input type="range" id="fallMultiplierSlider" min="1.5" max="4" step="0.5" value="2.5">
+            </div>
+
+            <div class="button-group">
+                <button id="saveSettingsBtn">Save & Apply</button>
+                <button id="resetSettingsBtn" class="secondary">Reset to Default</button>
+                <button id="closeSettingsBtn" class="secondary">Close</button>
+            </div>
+        </div>
+
+        <div id="gameOver">
+            <h1 id="scoreNumber">100</h1>
+            <button id="restartBtn">SELESAI</button>
+        </div>
+    </div>
+
+    <script>
+        // Canvas setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // UI elements
+        const scoreElement = document.getElementById('score');
+        const highScoreElement = document.getElementById('highScore');
+        const gameOverScreen = document.getElementById('gameOver');
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        const instructionsScreen = document.getElementById('instructions');
+        const welcomeBtn = document.getElementById('welcomeBtn');
+        const startBtn = document.getElementById('startBtn');
+        const restartBtn = document.getElementById('restartBtn');
+        const timeLeftElement = document.getElementById('timeLeft');
+        const timeRemainingDiv = document.getElementById('timeRemaining');
+        const countdownElement = document.getElementById('countdown');
+
+        // Set background images
+        welcomeScreen.style.backgroundImage = 'url(assets/page/welcome.webp)';
+        instructionsScreen.style.backgroundImage = 'url(assets/page/instruction.webp)';
+
+        // Game state
+        let gameRunning = false;
+        let score = 0;
+        let collectedItems = 0;
+        let highScore = localStorage.getItem('highScore') || 0;
+        highScoreElement.textContent = highScore;
+
+        // Timer variables
+        const GAME_DURATION = 25; // seconds
+        let gameTimer = GAME_DURATION;
+        let gameStartTime = 0;
+        
+        // Debug mode
+        let debugMode = false; // Set to true to show collision boxes
+
+        // Game settings with defaults
+        let gameSettings = {
+            initialSpeed: 8,
+            maxSpeed: 20,
+            jumpForce: 18,
+            gravity: 0.6,
+            jumpSensitivity: 7,
+            fallSensitivity: 5,
+            obstacleInterval: 120,
+            fallMultiplier: 2.5
+        };
+
+        // Difficulty presets
+        const difficultyPresets = {
+            easy: {
+                initialSpeed: 2.4,
+                maxSpeed: 8,
+                jumpForce: 180,
+                gravity: 0.2,
+                jumpSensitivity: 8,
+                fallSensitivity: 6,
+                obstacleInterval: 150,
+                fallMultiplier: 2
+            },
+            medium: {
+                initialSpeed: 4,
+                maxSpeed: 12,
+                jumpForce: 180,
+                gravity: 0.2,
+                jumpSensitivity: 7,
+                fallSensitivity: 5,
+                obstacleInterval: 120,
+                fallMultiplier: 2.5
+            },
+            hard: {
+                initialSpeed: 5.6,
+                maxSpeed: 16,
+                jumpForce: 170,
+                gravity: 0.25,
+                jumpSensitivity: 5,
+                fallSensitivity: 3,
+                obstacleInterval: 90,
+                fallMultiplier: 3
+            }
+        };
+
+        // Load settings from localStorage
+        function loadSettings() {
+            const saved = localStorage.getItem('gameSettings');
+            if (saved) {
+                gameSettings = JSON.parse(saved);
+            }
+            applySettingsToUI();
+        }
+
+        // Save settings to localStorage
+        function saveSettings() {
+            localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
+        }
+
+        // Apply settings to UI sliders
+        function applySettingsToUI() {
+            document.getElementById('speedSlider').value = gameSettings.initialSpeed;
+            document.getElementById('speedValue').textContent = gameSettings.initialSpeed;
+            
+            document.getElementById('maxSpeedSlider').value = gameSettings.maxSpeed;
+            document.getElementById('maxSpeedValue').textContent = gameSettings.maxSpeed;
+            
+            document.getElementById('jumpForceSlider').value = gameSettings.jumpForce;
+            document.getElementById('jumpForceValue').textContent = gameSettings.jumpForce;
+            
+            document.getElementById('gravitySlider').value = gameSettings.gravity;
+            document.getElementById('gravityValue').textContent = gameSettings.gravity;
+            
+            document.getElementById('sensitivitySlider').value = gameSettings.jumpSensitivity;
+            document.getElementById('sensitivityValue').textContent = gameSettings.jumpSensitivity;
+            
+            document.getElementById('fallSensitivitySlider').value = gameSettings.fallSensitivity;
+            document.getElementById('fallSensitivityValue').textContent = gameSettings.fallSensitivity;
+            
+            document.getElementById('obstacleFreqSlider').value = gameSettings.obstacleInterval;
+            updateObstacleFreqLabel(gameSettings.obstacleInterval);
+            
+            document.getElementById('fallMultiplierSlider').value = gameSettings.fallMultiplier;
+            document.getElementById('fallMultiplierValue').textContent = gameSettings.fallMultiplier;
+        }
+
+        // Update obstacle frequency label
+        function updateObstacleFreqLabel(value) {
+            let label = 'Medium';
+            if (value <= 80) label = 'Very High';
+            else if (value <= 100) label = 'High';
+            else if (value <= 140) label = 'Medium';
+            else if (value <= 160) label = 'Low';
+            else label = 'Very Low';
+            document.getElementById('obstacleFreqValue').textContent = label;
+        }
+
+        // Apply preset difficulty
+        function applyPreset(preset) {
+            gameSettings = { ...difficultyPresets[preset] };
+            applySettingsToUI();
+            saveSettings();
+            
+            // Update active button
+            document.querySelectorAll('.preset-buttons button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(preset + 'Btn').classList.add('active');
+        }
+
+        // Initialize settings
+        loadSettings();
+
+        // Load character sprites
+        const runningSprite = new Image();
+        runningSprite.src = 'assets/running.webp';
+        const jumpingSprite = new Image();
+        jumpingSprite.src = 'assets/jumping.webp';
+        
+        // Load obstacle sprites
+        const obstacleImages = [];
+        const obstacleFiles = ['0014_rock01.webp', '0014_rock02.png', '0015_cube.webp'];
+        
+        obstacleFiles.forEach(file => {
+            const img = new Image();
+            img.src = 'assets/obstacles/' + file;
+            obstacleImages.push(img);
+        });
+        
+        // Load point collectible images
+        const collectibleImages = {};
+        collectibleImages.bone = new Image();
+        collectibleImages.bone.src = 'assets/points/bone.webp';
+        collectibleImages.arm = new Image();
+        collectibleImages.arm.src = 'assets/points/arm.webp';
+        collectibleImages.bomb = new Image();
+        collectibleImages.bomb.src = 'assets/points/bomb.webp';
+        
+        let imagesLoaded = 0;
+        const totalImages = 2 + obstacleFiles.length + 3; // +3 for collectibles
+        
+        runningSprite.onload = () => {
+            imagesLoaded++;
+            checkImagesLoaded();
+        };
+        
+        jumpingSprite.onload = () => {
+            imagesLoaded++;
+            checkImagesLoaded();
+        };
+        
+        obstacleImages.forEach(img => {
+            img.onload = () => {
+                imagesLoaded++;
+                checkImagesLoaded();
+            };
+        });
+        
+        collectibleImages.bone.onload = () => { imagesLoaded++; checkImagesLoaded(); };
+        collectibleImages.arm.onload = () => { imagesLoaded++; checkImagesLoaded(); };
+        collectibleImages.bomb.onload = () => { imagesLoaded++; checkImagesLoaded(); };
+        
+        function checkImagesLoaded() {
+            if (imagesLoaded === totalImages) {
+                console.log('Character sprites loaded successfully');
+            }
+        }
+
+        // Mouse tracking
+        let lastMouseY = 0;
+        let currentMouseY = 0;
+
+        // Player object
+        const player = {
+            x: 100,
+            y: 0,
+            width: 240,
+            height: 300,
+            velocityY: 0,
+            gravity: 0.2,
+            jumpForce: -180,
+            fastFallMultiplier: 2.5,
+            isJumping: false,
+            isFastFalling: false,
+            color: '#ff6b6b'
+        };
+
+        // Apply current settings to player
+        function applySettingsToPlayer() {
+            player.gravity = gameSettings.gravity;
+            player.jumpForce = -gameSettings.jumpForce;
+            player.fastFallMultiplier = gameSettings.fallMultiplier;
+        }
+
+        // Apply settings initially
+        applySettingsToPlayer();
+
+        // Ground
+        const groundY = canvas.height - 200;
+        player.y = groundY - player.height;
+
+        // Load floor image
+        const floorImage = new Image();
+        floorImage.src = 'assets/floor.webp';
+        let floorPattern = null;
+        
+        // Create pattern once image loads
+        floorImage.onload = function() {
+            floorPattern = ctx.createPattern(floorImage, 'repeat');
+        };
+
+        // Show countdown
+        function showCountdown(number) {
+            return new Promise((resolve) => {
+                countdownElement.textContent = number === 0 ? 'GO!' : number;
+                countdownElement.style.display = 'block';
+                
+                // Force reflow to restart animation
+                countdownElement.style.animation = 'none';
+                countdownElement.offsetHeight; // Trigger reflow
+                countdownElement.style.animation = 'countdownPulse 1s ease-in-out';
+                
+                setTimeout(() => {
+                    if (number === 0) {
+                        countdownElement.style.display = 'none';
+                    }
+                    resolve();
+                }, 1000);
+            });
+        }
+
+        // Show point collection popup
+        function showPointPopup(x, y, points) {
+            const popup = document.createElement('div');
+            popup.className = 'point-popup';
+            popup.textContent = '+' + points;
+            popup.style.left = x + 'px';
+            popup.style.top = y + 'px';
+            document.getElementById('gameContainer').appendChild(popup);
+            
+            setTimeout(() => {
+                popup.remove();
+            }, 1000);
+        }
+
+        // Obstacles array
+        let obstacles = [];
+        let obstacleTimer = 0;
+        let obstacleInterval = 120; // Frames between obstacles
+
+        // Game speed
+        let gameSpeed = gameSettings.initialSpeed;
+        let maxSpeed = gameSettings.maxSpeed;
+        const speedIncrement = 0.0016;
+
+        // Background scroll
+        let scrollOffset = 0;
+        let floorScrollOffset = 0;
+
+        // Mouse movement handler
+        window.addEventListener('mousemove', (e) => {
+            currentMouseY = e.clientY;
+            
+            if (!gameRunning) return;
+
+            const deltaY = lastMouseY - currentMouseY;
+
+            // Jump detection: mouse moved UP by threshold (more sensitive)
+            if (deltaY > 3 && !player.isJumping) {
+                jump();
+                console.log('Jump from mouse! Delta:', deltaY);
+            }
+
+            // Fast fall detection: mouse moved DOWN
+            if (deltaY < -gameSettings.fallSensitivity && player.isJumping) {
+                player.isFastFalling = true;
+            } else {
+                player.isFastFalling = false;
+            }
+
+            lastMouseY = currentMouseY;
+        });
+
+        // Initialize last mouse position
+        window.addEventListener('mousemove', (e) => {
+            if (lastMouseY === 0) {
+                lastMouseY = e.clientY;
+            }
+        }, { once: true });
+
+        // Jump function
+        function jump() {
+            // More forgiving ground check - allow jump if close to ground
+            const distanceFromGround = (groundY - player.height) - player.y;
+            if (distanceFromGround >= -20 && distanceFromGround <= 5) {
+                player.velocityY = player.jumpForce;
+                player.isJumping = true;
+                console.log('Jump triggered! Jump force:', player.jumpForce, 'From ground:', distanceFromGround);
+            } else {
+                console.log('Cannot jump - not on ground. Distance:', distanceFromGround);
+            }
+        }
+
+        // Create obstacle
+        function createObstacle() {
+            const rand = Math.random();
+            
+            // 60% ground obstacles, 40% collectibles
+            if (rand < 0.6) {
+                // Ground obstacle (challenging but jumpable)
+                let obstacle = {
+                    x: canvas.width,
+                    width: 90 + Math.random() * 90,  // 90-180 pixels wide (50% increase)
+                    height: 120 + Math.random() * 80,  // 120-200 pixels tall (50% increase)
+                    color: '#2c3e50',
+                    type: 'ground',
+                    imageIndex: Math.floor(Math.random() * obstacleImages.length)
+                };
+                obstacle.y = groundY - obstacle.height;
+                obstacles.push(obstacle);
+            } else {
+                // Collectible points (bone, arm, or bomb)
+                const collectibleTypes = ['bone', 'arm', 'bomb'];
+                const pointValues = { bone: 5, arm: 5, bomb: -2 };
+                const randomType = collectibleTypes[Math.floor(Math.random() * collectibleTypes.length)];
+                
+                let collectible = {
+                    x: canvas.width,
+                    width: 100,
+                    height: 100,
+                    type: 'collectible',
+                    collected: false,
+                    collectibleType: randomType,
+                    pointValue: pointValues[randomType]
+                };
+                // Randomly position at ground level or high in the air
+                if (Math.random() < 0.5) {
+                    // Ground level
+                    collectible.y = groundY - collectible.height;
+                } else {
+                    // High in the air (requires jumping)
+                    collectible.y = groundY - 300 - Math.random() * 100;
+                }
+                obstacles.push(collectible);
+            }
+        }
+
+        // Update player
+        function updatePlayer() {
+            // Apply gravity
+            const gravityForce = player.isFastFalling ? 
+                player.gravity * player.fastFallMultiplier : 
+                player.gravity;
+            
+            player.velocityY += gravityForce;
+
+            // Update position
+            player.y += player.velocityY;
+
+            // Ground collision - with more forgiving check
+            const groundLevel = groundY - player.height;
+            if (player.y >= groundLevel) {
+                player.y = groundLevel;
+                player.velocityY = 0;
+                player.isJumping = false;
+                player.isFastFalling = false;
+            }
+
+            // Ceiling collision
+            if (player.y < 0) {
+                player.y = 0;
+                player.velocityY = 0;
+            }
+        }
+
+        // Update obstacles
+        function updateObstacles() {
+            obstacleTimer++;
+
+            // Create new obstacle
+            if (obstacleTimer > obstacleInterval) {
+                createObstacle();
+                obstacleTimer = 0;
+                // Decrease interval slightly for more challenge
+                obstacleInterval = Math.max(60, obstacleInterval - 0.5);
+            }
+
+            // Move and remove obstacles
+            obstacles = obstacles.filter(obstacle => {
+                obstacle.x -= gameSpeed;
+
+                // Award points when obstacle passes player
+                if (obstacle.x + obstacle.width < player.x && !obstacle.passed) {
+                    obstacle.passed = true;
+                    score += 10;
+                    scoreElement.textContent = score;
+                }
+
+                return obstacle.x + obstacle.width > 0;
+            });
+        }
+
+        // Check collisions (AABB) - with more forgiving hitbox
+        function checkCollision(rect1, rect2) {
+            // Make the character's collision box smaller than the obstacle's
+            const getCenterBox = (rect, isPlayer) => {
+                const boxScale = isPlayer ? 0.48 : 0.7; // player smaller, obstacle a bit larger
+                const w = rect.width * boxScale;
+                const h = rect.height * boxScale;
+                return {
+                    x: rect.x + (rect.width - w) / 2,
+                    y: rect.y + (rect.height - h) / 2,
+                    width: w,
+                    height: h
+                };
+            };
+            const a = getCenterBox(rect1, true); // player
+            const b = getCenterBox(rect2, false); // obstacle
+            return a.x < b.x + b.width &&
+                   a.x + a.width > b.x &&
+                   a.y < b.y + b.height &&
+                   a.y + a.height > b.y;
+        }
+
+        // Check game over and collectibles
+        function checkGameOver() {
+            for (let obstacle of obstacles) {
+                if (obstacle.type === 'ground') {
+                    // Only check collision if player is close to ground (not high in air)
+                    // This allows player to jump OVER obstacles without collision
+                    const playerBottom = player.y + player.height;
+                    const obstacleTop = obstacle.y;
+                    
+                    // Only collide if player's bottom is touching or below the top of obstacle
+                    if (playerBottom > obstacleTop + 80 && checkCollision(player, obstacle)) {
+                        // Hit ground obstacle - game over
+                        endGame();
+                        return;
+                    }
+                } else if (obstacle.type === 'collectible' && !obstacle.collected) {
+                    if (checkCollision(player, obstacle)) {
+                        // Collected a point item (bone, arm, or bomb)
+                        obstacle.collected = true;
+                        collectedItems++;
+                        const points = obstacle.pointValue;
+                        score += points;
+                        scoreElement.textContent = score;
+                        
+                        // Show floating point popup
+                        showPointPopup(obstacle.x + obstacle.width, obstacle.y, points);
+                    }
+                }
+            }
+        }
+
+        // Draw player
+        function drawPlayer() {
+            // Use jumping sprite when in air, running sprite when on ground
+            const sprite = player.isJumping ? jumpingSprite : runningSprite;
+            
+            // Draw the sprite
+            if (sprite.complete && sprite.naturalWidth > 0) {
+                ctx.drawImage(sprite, player.x, player.y, player.width, player.height);
+            } else {
+                // Fallback to rectangle if image not loaded
+                ctx.fillStyle = player.color;
+                ctx.fillRect(player.x, player.y, player.width, player.height);
+                
+                // Draw eyes
+                ctx.fillStyle = 'white';
+                ctx.fillRect(player.x + 10, player.y + 10, 8, 8);
+                ctx.fillRect(player.x + 25, player.y + 10, 8, 8);
+                
+                ctx.fillStyle = 'black';
+                ctx.fillRect(player.x + 13, player.y + 13, 3, 3);
+                ctx.fillRect(player.x + 28, player.y + 13, 3, 3);
+            }
+            
+            // Debug: Draw collision box
+            if (debugMode) {
+                const padding = 50;
+                ctx.strokeStyle = 'lime';
+                ctx.lineWidth = 3;
+                ctx.strokeRect(
+                    player.x + padding, 
+                    player.y + padding, 
+                    player.width - padding * 2, 
+                    player.height - padding * 2
+                );
+            }
+        }
+
+        // Draw obstacles
+        function drawObstacles() {
+            obstacles.forEach(obstacle => {
+                if (obstacle.type === 'ground') {
+                    // Draw ground obstacles using images
+                    const img = obstacleImages[obstacle.imageIndex];
+                    if (img && img.complete && img.naturalWidth > 0) {
+                        ctx.drawImage(img, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                    } else {
+                        // Fallback to rectangle
+                        ctx.fillStyle = obstacle.color;
+                        ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                        
+                        ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                    }
+                } else if (obstacle.type === 'collectible' && !obstacle.collected) {
+                    // Draw collectible points (bone, arm, or bomb)
+                    const collectibleImage = collectibleImages[obstacle.collectibleType];
+                    
+                    if (collectibleImage && collectibleImage.complete && collectibleImage.naturalWidth > 0) {
+                        ctx.drawImage(collectibleImage, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                    } else {
+                        // Fallback to colored circle if image not loaded
+                        const centerX = obstacle.x + obstacle.width / 2;
+                        const centerY = obstacle.y + obstacle.height / 2;
+                        const radius = obstacle.width / 2;
+                        
+                        // Different colors for different types
+                        const colors = { bone: '#ffffff', arm: '#ffcccc', bomb: '#333333' };
+                        ctx.fillStyle = colors[obstacle.collectibleType] || '#ffffff';
+                        
+                        ctx.beginPath();
+                        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                        ctx.fill();
+                        
+                        ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                        ctx.stroke();
+                    }
+                }
+            });
+        }
+
+        // Draw ground
+        function drawGround() {
+            // Draw floor image with scrolling animation
+            if (floorImage.complete) {
+                // Update floor scroll position
+                floorScrollOffset += gameSpeed;
+                
+                // Get floor image dimensions
+                const floorWidth = floorImage.width;
+                const floorHeight = canvas.height - groundY;
+                
+                // Reset scroll when it reaches the floor width
+                if (floorScrollOffset >= floorWidth) {
+                    floorScrollOffset = 0;
+                }
+                
+                // Draw two floor images for seamless scrolling
+                ctx.drawImage(floorImage, -floorScrollOffset, groundY, floorWidth, floorHeight);
+                ctx.drawImage(floorImage, floorWidth - floorScrollOffset, groundY, floorWidth, floorHeight);
+            } else {
+                // Fallback if image not loaded
+                ctx.fillStyle = '#95a5a6';
+                ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
+            }
+            
+            // Scrolling ground line
+            ctx.strokeStyle = '#34495e';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            
+            const lineSpacing = 40;
+            scrollOffset += gameSpeed;
+            if (scrollOffset > lineSpacing) scrollOffset = 0;
+
+            for (let i = -lineSpacing; i < canvas.width; i += lineSpacing) {
+                ctx.moveTo(i + scrollOffset, groundY);
+                ctx.lineTo(i + scrollOffset + 20, groundY);
+            }
+            ctx.stroke();
+        }
+
+        // Draw clouds (background)
+        function drawBackground() {
+            // Sky gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#87CEEB');
+            gradient.addColorStop(1, '#E0F6FF');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Simple clouds
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            const cloudPositions = [
+                { x: (scrollOffset * 0.3) % canvas.width, y: 80 },
+                { x: (scrollOffset * 0.2 + 300) % canvas.width, y: 150 },
+                { x: (scrollOffset * 0.25 + 600) % canvas.width, y: 100 }
+            ];
+
+            cloudPositions.forEach(cloud => {
+                ctx.beginPath();
+                ctx.arc(cloud.x, cloud.y, 30, 0, Math.PI * 2);
+                ctx.arc(cloud.x + 25, cloud.y, 35, 0, Math.PI * 2);
+                ctx.arc(cloud.x + 50, cloud.y, 30, 0, Math.PI * 2);
+                ctx.fill();
+            });
+        }
+
+        // Game loop
+        function gameLoop() {
+            if (!gameRunning) return;
+
+            // Update timer
+            const elapsed = (Date.now() - gameStartTime) / 1000;
+            gameTimer = Math.max(0, GAME_DURATION - elapsed);
+            const timeFormatted = Math.ceil(gameTimer).toString().padStart(2, '0');
+            timeLeftElement.textContent = '00:' + timeFormatted;
+            
+            // Warning color when time is low
+            if (gameTimer <= 5) {
+                document.getElementById('timeDisplay').style.background = '#ff6b6b';
+            } else {
+                document.getElementById('timeDisplay').style.background = '#1B4F91';
+            }
+
+            // End game when time runs out
+            if (gameTimer <= 0) {
+                endGame();
+                return;
+            }
+
+            // Update
+            updatePlayer();
+            updateObstacles();
+            checkGameOver();
+
+            // Increase speed gradually
+            if (gameSpeed < maxSpeed) {
+                gameSpeed += speedIncrement;
+            }
+
+            // Draw
+            drawBackground();
+            drawGround();
+            drawObstacles();
+            drawPlayer();
+
+            // Continue loop
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Show instruction screen from welcome
+        function showInstructions() {
+            welcomeScreen.style.display = 'none';
+            instructionsScreen.style.display = 'flex';
+            document.getElementById('settingsBtn').style.display = 'none';
+        }
+
+        // Start game
+        async function startGame() {
+            // Hide screens
+            welcomeScreen.style.display = 'none';
+            instructionsScreen.style.display = 'none';
+            gameOverScreen.style.display = 'none';
+            document.getElementById('settings').style.display = 'none';
+            document.getElementById('settingsBtn').style.display = 'none';
+            
+            // Reset game state
+            score = 0;
+            collectedItems = 0;
+            gameSpeed = gameSettings.initialSpeed;
+            maxSpeed = gameSettings.maxSpeed;
+            obstacles = [];
+            obstacleTimer = 0;
+            obstacleInterval = gameSettings.obstacleInterval;
+            player.y = groundY - player.height;
+            player.velocityY = 0;
+            player.isJumping = false;
+            scrollOffset = 0;
+            floorScrollOffset = 0;
+            gameTimer = GAME_DURATION;
+
+            applySettingsToPlayer();
+
+            scoreElement.textContent = score;
+            timeLeftElement.textContent = GAME_DURATION;
+            document.getElementById('timeDisplay').style.display = 'flex';
+            document.getElementById('totalDisplay').style.display = 'flex';
+            timeRemainingDiv.style.display = 'none';
+            timeRemainingDiv.classList.remove('warning');
+            
+            // Show countdown
+            await showCountdown(3);
+            await showCountdown(2);
+            await showCountdown(1);
+            await showCountdown(0);
+            
+            // Start game
+            gameRunning = true;
+            gameStartTime = Date.now();
+            gameLoop();
+        }
+
+        // End game
+        function endGame() {
+            gameRunning = false;
+
+            // Update high score
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('highScore', highScore);
+                highScoreElement.textContent = highScore;
+            }
+
+            // Update score display
+            document.getElementById('scoreNumber').textContent = score;
+            
+            gameOverScreen.style.display = 'flex';
+            document.getElementById('timeDisplay').style.display = 'none';
+            document.getElementById('totalDisplay').style.display = 'none';
+            timeRemainingDiv.style.display = 'none';
+        }
+
+        // Settings UI Elements
+        const settingsScreen = document.getElementById('settings');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
+        const resetSettingsBtn = document.getElementById('resetSettingsBtn');
+        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+        const easyBtn = document.getElementById('easyBtn');
+        const mediumBtn = document.getElementById('mediumBtn');
+        const hardBtn = document.getElementById('hardBtn');
+
+        // Settings sliders
+        const speedSlider = document.getElementById('speedSlider');
+        const maxSpeedSlider = document.getElementById('maxSpeedSlider');
+        const jumpForceSlider = document.getElementById('jumpForceSlider');
+        const gravitySlider = document.getElementById('gravitySlider');
+        const sensitivitySlider = document.getElementById('sensitivitySlider');
+        const fallSensitivitySlider = document.getElementById('fallSensitivitySlider');
+        const obstacleFreqSlider = document.getElementById('obstacleFreqSlider');
+        const fallMultiplierSlider = document.getElementById('fallMultiplierSlider');
+
+        // Slider event listeners
+        speedSlider.addEventListener('input', (e) => {
+            document.getElementById('speedValue').textContent = e.target.value;
+        });
+
+        maxSpeedSlider.addEventListener('input', (e) => {
+            document.getElementById('maxSpeedValue').textContent = e.target.value;
+        });
+
+        jumpForceSlider.addEventListener('input', (e) => {
+            document.getElementById('jumpForceValue').textContent = e.target.value;
+        });
+
+        gravitySlider.addEventListener('input', (e) => {
+            document.getElementById('gravityValue').textContent = e.target.value;
+        });
+
+        sensitivitySlider.addEventListener('input', (e) => {
+            document.getElementById('sensitivityValue').textContent = e.target.value;
+        });
+
+        fallSensitivitySlider.addEventListener('input', (e) => {
+            document.getElementById('fallSensitivityValue').textContent = e.target.value;
+        });
+
+        obstacleFreqSlider.addEventListener('input', (e) => {
+            updateObstacleFreqLabel(e.target.value);
+        });
+
+        fallMultiplierSlider.addEventListener('input', (e) => {
+            document.getElementById('fallMultiplierValue').textContent = e.target.value;
+        });
+
+        // Settings button handlers
+        settingsBtn.addEventListener('click', () => {
+            settingsScreen.style.display = 'block';
+        });
+
+        closeSettingsBtn.addEventListener('click', () => {
+            settingsScreen.style.display = 'none';
+        });
+
+        saveSettingsBtn.addEventListener('click', () => {
+            gameSettings.initialSpeed = parseFloat(speedSlider.value);
+            gameSettings.maxSpeed = parseFloat(maxSpeedSlider.value);
+            gameSettings.jumpForce = parseFloat(jumpForceSlider.value);
+            gameSettings.gravity = parseFloat(gravitySlider.value);
+            gameSettings.jumpSensitivity = parseFloat(sensitivitySlider.value);
+            gameSettings.fallSensitivity = parseFloat(fallSensitivitySlider.value);
+            gameSettings.obstacleInterval = parseFloat(obstacleFreqSlider.value);
+            gameSettings.fallMultiplier = parseFloat(fallMultiplierSlider.value);
+            
+            saveSettings();
+            applySettingsToPlayer();
+            
+            // Remove active class from presets since custom settings were saved
+            document.querySelectorAll('.preset-buttons button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            settingsScreen.style.display = 'none';
+            alert('Settings saved! Changes will apply to your next game.');
+        });
+
+        resetSettingsBtn.addEventListener('click', () => {
+            if (confirm('Reset all settings to default (Medium difficulty)?')) {
+                applyPreset('medium');
+            }
+        });
+
+        // Preset buttons
+        easyBtn.addEventListener('click', () => applyPreset('easy'));
+        mediumBtn.addEventListener('click', () => applyPreset('medium'));
+        hardBtn.addEventListener('click', () => applyPreset('hard'));
+
+        // Event listeners
+        welcomeBtn.addEventListener('click', showInstructions);
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', () => {
+            location.reload();
+        });
+
+        // Keyboard support (optional - for testing)
+        window.addEventListener('keydown', (e) => {
+            if (!gameRunning) return;
+            
+            if (e.code === 'Space' || e.code === 'ArrowUp') {
+                e.preventDefault();
+                jump();
+                console.log('Jump from keyboard!');
+            }
+        });
+    </script>
+</body>
+</html>
