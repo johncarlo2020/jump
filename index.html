@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="max-age=31536000">
     <title>Air Mouse Runner</title>
     <style>
         @font-face {
@@ -210,7 +211,7 @@
 
         #gameOver button {
             position: absolute;
-            bottom: 80px;
+            bottom: 412px;
             padding: 30px 120px;
             font-size: 64px;
             background: #29b5e8;
@@ -278,7 +279,8 @@
             display: none;
             justify-content: center;
             align-items: flex-end;
-            padding-bottom: 100px;
+            padding-bottom: 180px;
+
         }
 
         #instructionText {
@@ -700,12 +702,12 @@
         // Debug mode
         let debugMode = false; // Set to true to show collision boxes
 
-        // Game settings with defaults
+        // Game settings with defaults (Medium difficulty)
         let gameSettings = {
-            initialSpeed: 8,
-            maxSpeed: 20,
-            jumpForce: 18,
-            gravity: 0.6,
+            initialSpeed: 4,
+            maxSpeed: 12,
+            jumpForce: 17,
+            gravity: 0.5,
             jumpSensitivity: 7,
             fallSensitivity: 5,
             obstacleInterval: 120,
@@ -717,8 +719,8 @@
             easy: {
                 initialSpeed: 2.4,
                 maxSpeed: 8,
-                jumpForce: 180,
-                gravity: 0.2,
+                jumpForce: 16,
+                gravity: 0.45,
                 jumpSensitivity: 8,
                 fallSensitivity: 6,
                 obstacleInterval: 150,
@@ -727,8 +729,8 @@
             medium: {
                 initialSpeed: 4,
                 maxSpeed: 12,
-                jumpForce: 180,
-                gravity: 0.2,
+                jumpForce: 17,
+                gravity: 0.5,
                 jumpSensitivity: 7,
                 fallSensitivity: 5,
                 obstacleInterval: 120,
@@ -737,8 +739,8 @@
             hard: {
                 initialSpeed: 5.6,
                 maxSpeed: 16,
-                jumpForce: 170,
-                gravity: 0.25,
+                jumpForce: 18,
+                gravity: 0.55,
                 jumpSensitivity: 5,
                 fallSensitivity: 3,
                 obstacleInterval: 90,
@@ -863,9 +865,14 @@
         collectibleImages.arm.onload = () => { imagesLoaded++; checkImagesLoaded(); };
         collectibleImages.bomb.onload = () => { imagesLoaded++; checkImagesLoaded(); };
         
+        let assetsReady = false;
         function checkImagesLoaded() {
             if (imagesLoaded === totalImages) {
-                console.log('Character sprites loaded successfully');
+                assetsReady = true;
+                // Create floor pattern
+                if (floorImage.complete && floorImage.naturalWidth > 0) {
+                    floorPattern = ctx.createPattern(floorImage, 'repeat');
+                }
             }
         }
 
@@ -907,7 +914,6 @@
         floorImage.src = 'assets/floor.webp';
         let floorPattern = null;
         
-        // Create pattern once image loads
         floorImage.onload = function() {
             floorPattern = ctx.createPattern(floorImage, 'repeat');
         };
@@ -1034,8 +1040,8 @@
                 // Ground obstacle (challenging but jumpable)
                 let obstacle = {
                     x: canvas.width,
-                    width: 90 + Math.random() * 90,  // 90-180 pixels wide (50% increase)
-                    height: 120 + Math.random() * 80,  // 120-200 pixels tall (50% increase)
+                    width: 60 + Math.random() * 48,  // 60-108 pixels wide
+                    height: 84 + Math.random() * 60,  // 84-144 pixels tall
                     color: '#2c3e50',
                     type: 'ground',
                     imageIndex: Math.floor(Math.random() * obstacleImages.length)
@@ -1437,6 +1443,22 @@
 
         // Start game
         async function startGame() {
+            // Wait for assets to load if not ready
+            if (!assetsReady) {
+                countdownElement.textContent = 'Memuatkan...';
+                countdownElement.style.display = 'block';
+                countdownElement.style.animation = 'none';
+                
+                // Wait until assets are ready
+                let attempts = 0;
+                while (!assetsReady && attempts < 50) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                
+                countdownElement.style.display = 'none';
+            }
+
             // Hide screens
             welcomeScreen.style.display = 'none';
             instructionsScreen.style.display = 'none';
