@@ -514,7 +514,7 @@
         </div>
 
         <div id="totalDisplay">
-            SKOR: <span id="score">0</span>
+            JUMLAH: <span id="score">0</span>
         </div>
 
         <div id="ui" style="display: none;">
@@ -647,6 +647,32 @@
         let collectedItems = 0;
         let highScore = localStorage.getItem('highScore') || 0;
         highScoreElement.textContent = highScore;
+
+        // Load sound effects
+        const sounds = {
+            background: new Audio('assets/SOUNDTRACK/bg.mp3'),
+            bomb: new Audio('assets/SOUNDTRACK/bomb effects.mp3'),
+            collect: new Audio('assets/SOUNDTRACK/collect bird nest.mp3'),
+            completed: new Audio('assets/SOUNDTRACK/completed.mp3'),
+            countdown: new Audio('assets/SOUNDTRACK/countdownsound.mp3'),
+            gameOver: new Audio('assets/SOUNDTRACK/game over .mp3'),
+            gameWon: new Audio('assets/SOUNDTRACK/game won.mp3'),
+            buzzer: new Audio('assets/SOUNDTRACK/long-buzzer.mp3'),
+            select: new Audio('assets/SOUNDTRACK/select-sound.mp3'),
+            wrongItem: new Audio('assets/SOUNDTRACK/wrong item.mp3')
+        };
+
+        // Configure background music to loop
+        sounds.background.loop = true;
+        sounds.background.volume = 0.3;
+
+        // Helper function to play sound
+        function playSound(soundName) {
+            if (sounds[soundName]) {
+                sounds[soundName].currentTime = 0;
+                sounds[soundName].play().catch(e => console.log('Audio play failed:', e));
+            }
+        }
 
         // Timer variables
         const GAME_DURATION = 25; // seconds
@@ -854,8 +880,8 @@
         // Apply settings initially
         applySettingsToPlayer();
 
-        // Ground
-        const groundY = canvas.height - 200;
+        // Ground - positioned so floor occupies 33% of screen height
+        const groundY = canvas.height * 0.67; // 67% from top = 33% for floor
         player.y = groundY - player.height;
 
         // Load floor image
@@ -871,8 +897,9 @@
         // Show countdown
         function showCountdown(number) {
             return new Promise((resolve) => {
-                countdownElement.textContent = number === 0 ? 'GO!' : number;
+                countdownElement.textContent = number === 0 ? 'JOM!' : number;
                 countdownElement.style.display = 'block';
+                playSound('countdown');
                 
                 // Force reflow to restart animation
                 countdownElement.style.animation = 'none';
@@ -973,6 +1000,7 @@
             if (distanceFromGround >= -20 && distanceFromGround <= 5) {
                 player.velocityY = player.jumpForce;
                 player.isJumping = true;
+                playSound('select');
                 console.log('Jump triggered! Jump force:', player.jumpForce, 'From ground:', distanceFromGround);
             } else {
                 console.log('Cannot jump - not on ground. Distance:', distanceFromGround);
@@ -1112,6 +1140,12 @@
                     // Only collide if player's bottom is touching or below the top of obstacle
                     if (playerBottom > obstacleTop + 80 && checkCollision(player, obstacle)) {
                         // Hit ground obstacle - game over
+                        playSound('buzzer');
+                        // Stop buzzer after 1 second
+                        setTimeout(() => {
+                            sounds.buzzer.pause();
+                            sounds.buzzer.currentTime = 0;
+                        }, 1000);
                         endGame();
                         return;
                     }
@@ -1123,6 +1157,15 @@
                         const points = obstacle.pointValue;
                         score += points;
                         scoreElement.textContent = score;
+                        
+                        // Play appropriate sound based on collectible type
+                        if (obstacle.collectibleType === 'bomb') {
+                            playSound('bomb');
+                        } else if (points < 0) {
+                            playSound('wrongItem');
+                        } else {
+                            playSound('collect');
+                        }
                         
                         // Show floating point popup at collectible center
                         showPointPopup(obstacle.x + obstacle.width / 2, obstacle.y + obstacle.height / 2, points);
@@ -1316,6 +1359,12 @@
 
             // End game when time runs out
             if (gameTimer <= 0) {
+                playSound('completed');
+                // Stop completed sound after 2 seconds
+                setTimeout(() => {
+                    sounds.completed.pause();
+                    sounds.completed.currentTime = 0;
+                }, 2000);
                 endGame();
                 return;
             }
@@ -1386,15 +1435,22 @@
             await showCountdown(1);
             await showCountdown(0);
             
+            // Stop countdown sound
+            sounds.countdown.pause();
+            sounds.countdown.currentTime = 0;
+            
             // Start game
             gameRunning = true;
             gameStartTime = Date.now();
+            playSound('background');
             gameLoop();
         }
 
         // End game
         function endGame() {
             gameRunning = false;
+            sounds.background.pause();
+            sounds.background.currentTime = 0;
 
             // Update high score
             if (score > highScore) {
@@ -1508,9 +1564,10 @@
         hardBtn.addEventListener('click', () => applyPreset('hard'));
 
         // Event listeners
-        welcomeBtn.addEventListener('click', showInstructions);
+        welcomeBtn.addEventListener('click', () => { playSound('select'); showInstructions(); });
         startBtn.addEventListener('click', startGame);
         restartBtn.addEventListener('click', () => {
+            playSound('select');
             location.reload();
         });
 
