@@ -281,24 +281,25 @@
             padding-bottom: 100px;
         }
 
-        #instructions button {
-            padding: 30px 120px;
-            font-size: 64px;
-            background: #29b5e8;
+        #instructionText {
+            font-size: 80px;
+            font-weight: 900;
             color: white;
-            border: 6px solid white;
-            border-radius: 80px;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: bold;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+            -webkit-text-stroke: 8px #1B4F91;
+            text-stroke: 8px #1B4F91;
+            paint-order: stroke fill;
             letter-spacing: 2px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-transform: lowercase;
         }
 
-        #instructions button:hover {
-            background: #1a9dd1;
-            transform: scale(1.05);
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        #instructionText img {
+            height: 80px;
+            margin: 0 20px;
+            vertical-align: middle;
         }
 
         #settings {
@@ -533,7 +534,9 @@
         </div>
 
         <div id="instructions">
-            <button id="startBtn">SETERUSNYA</button>
+            <div id="instructionText" onclick="startGame()">
+                Tekan <img src="assets/logo.webp" alt="Dutch Lady"> untuk mulakan!
+            </div>
         </div>
 
         <button class="settings-btn" id="settingsBtn" style="display: none;">⚙️ Settings</button>
@@ -1461,6 +1464,14 @@
 
             // Update score display
             document.getElementById('scoreNumber').textContent = score;
+            
+            // Change button text based on score
+            const restartButton = document.getElementById('restartBtn');
+            if (score < 300) {
+                restartButton.textContent = 'MULA LAGI';
+            } else {
+                restartButton.textContent = 'SELESAI';
+            }
             
             gameOverScreen.style.display = 'flex';
             document.getElementById('timeDisplay').style.display = 'none';
