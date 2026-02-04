@@ -1149,7 +1149,7 @@
         // Check game over and collectibles
         function checkGameOver() {
             for (let obstacle of obstacles) {
-                if (obstacle.type === 'ground') {
+                if (obstacle.type === 'ground' && !obstacle.hit) {
                     // Only check collision if player is close to ground (not high in air)
                     // This allows player to jump OVER obstacles without collision
                     const playerBottom = player.y + player.height;
@@ -1157,14 +1157,27 @@
                     
                     // Only collide if player's bottom is touching or below the top of obstacle
                     if (playerBottom > obstacleTop + 80 && checkCollision(player, obstacle)) {
-                        // Hit ground obstacle - game over
-                        playSound('buzzer');
-                        // Stop buzzer after 1 second
-                        setTimeout(() => {
-                            sounds.buzzer.pause();
-                            sounds.buzzer.currentTime = 0;
-                        }, 1000);
-                        endGame();
+                        // Hit ground obstacle - deduct 2 points
+                        obstacle.hit = true;
+                        score -= 2;
+                        scoreElement.textContent = score;
+                        
+                        playSound('bomb');
+                        
+                        // Add shake effect to game container
+                        const gameContainer = document.getElementById('gameContainer');
+                        gameContainer.classList.add('shake');
+                        setTimeout(() => gameContainer.classList.remove('shake'), 500);
+                        
+                        // Add red border effect to canvas
+                        canvas.classList.add('red-border');
+                        setTimeout(() => canvas.classList.remove('red-border'), 500);
+                        
+                        // Show floating point popup at obstacle center
+                        showPointPopup(obstacle.x + obstacle.width / 2, obstacle.y + obstacle.height / 2, -2);
+                        
+                        // Mark obstacle for removal
+                        obstacles = obstacles.filter(obs => obs !== obstacle);
                         return;
                     }
                 } else if (obstacle.type === 'collectible' && !obstacle.collected) {
