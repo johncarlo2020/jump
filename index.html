@@ -1443,9 +1443,9 @@
             // Update score display
             document.getElementById('scoreNumber').textContent = score;
             
-            // Change button text based on score
+            // Change button text based on score (30+ = success, below 30 = fail)
             const restartButton = document.getElementById('restartBtn');
-            if (score < 300) {
+            if (score < 30) {
                 restartButton.textContent = 'MULA LAGI';
             } else {
                 restartButton.textContent = 'SELESAI';
