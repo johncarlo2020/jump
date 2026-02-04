@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Settings - Air Mouse Runner</title>
+    <style>
+        @font-face {
+            font-family: 'Brevia';
+            src: url('assets/font/09BREVIA-BOLD.OTF') format('opentype');
+            font-weight: 700;
+            font-style: normal;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Brevia', 'Arial', sans-serif;
+            font-weight: 700;
+            padding: 20px;
+        }
+
+        .settings-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            padding: 40px;
+        }
+
+        .settings-container::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        .settings-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 5px;
+        }
+
+        .settings-container::-webkit-scrollbar-thumb {
+            background: #667eea;
+            border-radius: 5px;
+        }
+
+        .settings-container::-webkit-scrollbar-thumb:hover {
+            background: #764ba2;
+        }
+
+        h1 {
+            font-size: 48px;
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            color: #764ba2;
+            margin: 30px 0 20px 0;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .preset-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .preset-buttons button {
+            padding: 20px;
+            font-size: 20px;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: 3px solid transparent;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Brevia', Arial, sans-serif;
+        }
+
+        .preset-buttons button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .preset-buttons button.active {
+            border-color: #29b5e8;
+            box-shadow: 0 0 20px rgba(41, 181, 232, 0.6);
+        }
+
+        .setting-group {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 12px;
+            border: 2px solid rgba(102, 126, 234, 0.1);
+        }
+
+        .setting-group label {
+            display: block;
+            font-size: 18px;
+            margin-bottom: 12px;
+            color: #333;
+        }
+
+        .setting-value {
+            float: right;
+            font-weight: bold;
+            color: #667eea;
+            font-size: 20px;
+        }
+
+        .setting-group input[type="range"] {
+            width: 100%;
+            height: 8px;
+            border-radius: 4px;
+            background: rgba(102, 126, 234, 0.2);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .setting-group input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .setting-group input[type="range"]::-moz-range-thumb {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 40px;
+        }
+
+        .button-group button {
+            padding: 18px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Brevia', Arial, sans-serif;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #29b5e8 0%, #1a9dd1 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(41, 181, 232, 0.4);
+        }
+
+        .btn-secondary {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(102, 126, 234, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .btn-back {
+            background: #764ba2;
+            color: white;
+        }
+
+        .btn-back:hover {
+            background: #5a3a7d;
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(118, 75, 162, 0.4);
+        }
+
+        .success-message {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #29b5e8;
+            color: white;
+            padding: 20px 30px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .success-message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="settings-container">
+        <h1>⚙️ Game Settings</h1>
+
+        <div class="section-title">Difficulty Presets</div>
+        <div class="preset-buttons">
+            <button id="easyBtn">Easy</button>
+            <button id="mediumBtn" class="active">Medium</button>
+            <button id="hardBtn">Hard</button>
+        </div>
+
+        <div class="section-title">Speed Settings</div>
+        <div class="setting-group">
+            <label>
+                Initial Speed: <span class="setting-value" id="speedValue">7.2</span>
+            </label>
+            <input type="range" id="speedSlider" min="2" max="12" step="0.1" value="7.2">
+        </div>
+
+        <div class="setting-group">
+            <label>
+                Max Speed: <span class="setting-value" id="maxSpeedValue">21.6</span>
+            </label>
+            <input type="range" id="maxSpeedSlider" min="10" max="35" step="0.1" value="21.6">
+        </div>
+
+        <div class="section-title">Player Physics</div>
+        <div class="setting-group">
+            <label>
+                Jump Force: <span class="setting-value" id="jumpForceValue">20</span>
+            </label>
+            <input type="range" id="jumpForceSlider" min="15" max="30" step="1" value="20">
+        </div>
+
+        <div class="setting-group">
+            <label>
+                Gravity: <span class="setting-value" id="gravityValue">0.5</span>
+            </label>
+            <input type="range" id="gravitySlider" min="0.2" max="1.2" step="0.05" value="0.5">
+        </div>
+
+        <div class="setting-group">
+            <label>
+                Fast Fall Multiplier: <span class="setting-value" id="fallMultiplierValue">2.5</span>
+            </label>
+            <input type="range" id="fallMultiplierSlider" min="1.5" max="4" step="0.1" value="2.5">
+        </div>
+
+        <div class="section-title">Mouse Controls</div>
+        <div class="setting-group">
+            <label>
+                Jump Sensitivity: <span class="setting-value" id="sensitivityValue">7</span>
+            </label>
+            <input type="range" id="sensitivitySlider" min="3" max="15" step="1" value="7">
+        </div>
+
+        <div class="setting-group">
+            <label>
+                Fall Speed Sensitivity: <span class="setting-value" id="fallSensitivityValue">5</span>
+            </label>
+            <input type="range" id="fallSensitivitySlider" min="2" max="10" step="1" value="5">
+        </div>
+
+        <div class="section-title">Spawn Settings</div>
+        <div class="setting-group">
+            <label>
+                Obstacle Spawn Rate: <span class="setting-value" id="obstacleSpawnValue">20%</span>
+            </label>
+            <input type="range" id="obstacleSpawnSlider" min="0" max="50" step="5" value="20">
+        </div>
+
+        <div class="setting-group">
+            <label>
+                Positive Collectible Rate: <span class="setting-value" id="positiveRateValue">91%</span>
+            </label>
+            <input type="range" id="positiveRateSlider" min="50" max="100" step="5" value="91">
+        </div>
+
+        <div class="setting-group">
+            <label>
+                Drop Frequency: <span class="setting-value" id="dropRateValue">120</span>
+            </label>
+            <input type="range" id="dropRateSlider" min="60" max="180" step="10" value="120">
+        </div>
+
+        <div class="button-group">
+            <button id="backBtn" class="btn-back">← Back to Game</button>
+            <button id="resetBtn" class="btn-secondary">Reset to Default</button>
+            <button id="saveBtn" class="btn-primary">Save Settings</button>
+        </div>
+    </div>
+
+    <div id="successMessage" class="success-message">Settings saved successfully!</div>
+
+    <script>
+        // Default settings (Medium difficulty)
+        const defaultSettings = {
+            initialSpeed: 7.2,
+            maxSpeed: 21.6,
+            jumpForce: 20,
+            gravity: 0.5,
+            jumpSensitivity: 7,
+            fallSensitivity: 5,
+            obstacleInterval: 120,
+            fallMultiplier: 2.5,
+            obstacleSpawnRate: 20,
+            positiveCollectibleRate: 91,
+            dropRate: 120
+        };
+
+        // Difficulty presets
+        const difficultyPresets = {
+            easy: {
+                initialSpeed: 4.8,
+                maxSpeed: 14.4,
+                jumpForce: 19,
+                gravity: 0.45,
+                jumpSensitivity: 8,
+                fallSensitivity: 6,
+                obstacleInterval: 140,
+                fallMultiplier: 2,
+                obstacleSpawnRate: 15,
+                positiveCollectibleRate: 95,
+                dropRate: 140
+            },
+            medium: {
+                initialSpeed: 7.2,
+                maxSpeed: 21.6,
+                jumpForce: 20,
+                gravity: 0.5,
+                jumpSensitivity: 7,
+                fallSensitivity: 5,
+                obstacleInterval: 120,
+                fallMultiplier: 2.5,
+                obstacleSpawnRate: 20,
+                positiveCollectibleRate: 91,
+                dropRate: 120
+            },
+            hard: {
+                initialSpeed: 9.6,
+                maxSpeed: 28.8,
+                jumpForce: 22,
+                gravity: 0.6,
+                jumpSensitivity: 5,
+                fallSensitivity: 4,
+                obstacleInterval: 100,
+                fallMultiplier: 3,
+                obstacleSpawnRate: 30,
+                positiveCollectibleRate: 85,
+                dropRate: 100
+            }
+        };
+
+        // Get all slider elements
+        const sliders = {
+            speed: document.getElementById('speedSlider'),
+            maxSpeed: document.getElementById('maxSpeedSlider'),
+            jumpForce: document.getElementById('jumpForceSlider'),
+            gravity: document.getElementById('gravitySlider'),
+            sensitivity: document.getElementById('sensitivitySlider'),
+            fallSensitivity: document.getElementById('fallSensitivitySlider'),
+            fallMultiplier: document.getElementById('fallMultiplierSlider'),
+            obstacleSpawn: document.getElementById('obstacleSpawnSlider'),
+            positiveRate: document.getElementById('positiveRateSlider'),
+            dropRate: document.getElementById('dropRateSlider')
+        };
+
+        // Get all value display elements
+        const displays = {
+            speed: document.getElementById('speedValue'),
+            maxSpeed: document.getElementById('maxSpeedValue'),
+            jumpForce: document.getElementById('jumpForceValue'),
+            gravity: document.getElementById('gravityValue'),
+            sensitivity: document.getElementById('sensitivityValue'),
+            fallSensitivity: document.getElementById('fallSensitivityValue'),
+            fallMultiplier: document.getElementById('fallMultiplierValue'),
+            obstacleSpawn: document.getElementById('obstacleSpawnValue'),
+            positiveRate: document.getElementById('positiveRateValue'),
+            dropRate: document.getElementById('dropRateValue')
+        };
+
+        // Load settings from localStorage
+        function loadSettings() {
+            const saved = localStorage.getItem('gameSettings');
+            return saved ? JSON.parse(saved) : { ...defaultSettings };
+        }
+
+        // Apply settings to UI
+        function applySettingsToUI(settings) {
+            sliders.speed.value = settings.initialSpeed;
+            displays.speed.textContent = settings.initialSpeed;
+
+            sliders.maxSpeed.value = settings.maxSpeed;
+            displays.maxSpeed.textContent = settings.maxSpeed;
+
+            sliders.jumpForce.value = settings.jumpForce;
+            displays.jumpForce.textContent = settings.jumpForce;
+
+            sliders.gravity.value = settings.gravity;
+            displays.gravity.textContent = settings.gravity;
+
+            sliders.sensitivity.value = settings.jumpSensitivity;
+            displays.sensitivity.textContent = settings.jumpSensitivity;
+
+            sliders.fallSensitivity.value = settings.fallSensitivity;
+            displays.fallSensitivity.textContent = settings.fallSensitivity;
+
+            sliders.fallMultiplier.value = settings.fallMultiplier;
+            displays.fallMultiplier.textContent = settings.fallMultiplier;
+
+            sliders.obstacleSpawn.value = settings.obstacleSpawnRate || 20;
+            displays.obstacleSpawn.textContent = (settings.obstacleSpawnRate || 20) + '%';
+
+            sliders.positiveRate.value = settings.positiveCollectibleRate || 91;
+            displays.positiveRate.textContent = (settings.positiveCollectibleRate || 91) + '%';
+
+            sliders.dropRate.value = settings.dropRate || 120;
+            displays.dropRate.textContent = settings.dropRate || 120;
+        }
+
+        // Save settings to localStorage
+        function saveSettings() {
+            const settings = {
+                initialSpeed: parseFloat(sliders.speed.value),
+                maxSpeed: parseFloat(sliders.maxSpeed.value),
+                jumpForce: parseFloat(sliders.jumpForce.value),
+                gravity: parseFloat(sliders.gravity.value),
+                jumpSensitivity: parseFloat(sliders.sensitivity.value),
+                fallSensitivity: parseFloat(sliders.fallSensitivity.value),
+                obstacleInterval: 120,
+                fallMultiplier: parseFloat(sliders.fallMultiplier.value),
+                obstacleSpawnRate: parseFloat(sliders.obstacleSpawn.value),
+                positiveCollectibleRate: parseFloat(sliders.positiveRate.value),
+                dropRate: parseFloat(sliders.dropRate.value)
+            };
+
+            localStorage.setItem('gameSettings', JSON.stringify(settings));
+            showSuccessMessage();
+        }
+
+        // Show success message
+        function showSuccessMessage() {
+            const message = document.getElementById('successMessage');
+            message.classList.add('show');
+            setTimeout(() => {
+                message.classList.remove('show');
+            }, 2000);
+        }
+
+        // Apply preset
+        function applyPreset(preset) {
+            const settings = { ...difficultyPresets[preset] };
+            applySettingsToUI(settings);
+            
+            // Update active button
+            document.querySelectorAll('.preset-buttons button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(preset + 'Btn').classList.add('active');
+        }
+
+        // Slider event listeners
+        sliders.speed.addEventListener('input', (e) => {
+            displays.speed.textContent = e.target.value;
+        });
+
+        sliders.maxSpeed.addEventListener('input', (e) => {
+            displays.maxSpeed.textContent = e.target.value;
+        });
+
+        sliders.jumpForce.addEventListener('input', (e) => {
+            displays.jumpForce.textContent = e.target.value;
+        });
+
+        sliders.gravity.addEventListener('input', (e) => {
+            displays.gravity.textContent = e.target.value;
+        });
+
+        sliders.sensitivity.addEventListener('input', (e) => {
+            displays.sensitivity.textContent = e.target.value;
+        });
+
+        sliders.fallSensitivity.addEventListener('input', (e) => {
+            displays.fallSensitivity.textContent = e.target.value;
+        });
+
+        sliders.fallMultiplier.addEventListener('input', (e) => {
+            displays.fallMultiplier.textContent = e.target.value;
+        });
+
+        sliders.obstacleSpawn.addEventListener('input', (e) => {
+            displays.obstacleSpawn.textContent = e.target.value + '%';
+        });
+
+        sliders.positiveRate.addEventListener('input', (e) => {
+            displays.positiveRate.textContent = e.target.value + '%';
+        });
+
+        sliders.dropRate.addEventListener('input', (e) => {
+            displays.dropRate.textContent = e.target.value;
+        });
+
+        // Button event listeners
+        document.getElementById('easyBtn').addEventListener('click', () => applyPreset('easy'));
+        document.getElementById('mediumBtn').addEventListener('click', () => applyPreset('medium'));
+        document.getElementById('hardBtn').addEventListener('click', () => applyPreset('hard'));
+
+        document.getElementById('saveBtn').addEventListener('click', () => {
+            saveSettings();
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            if (confirm('Reset all settings to default (Medium difficulty)?')) {
+                applyPreset('medium');
+                saveSettings();
+            }
+        });
+
+        document.getElementById('backBtn').addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
+
+        // Load and apply saved settings on page load
+        const savedSettings = loadSettings();
+        applySettingsToUI(savedSettings);
+    </script>
+</body>
+</html>

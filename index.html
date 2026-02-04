@@ -563,82 +563,7 @@
             </div>
         </div>
 
-        <button class="settings-btn" id="settingsBtn" style="display: none;">⚙️ Settings</button>
-
-        <div id="settings">
-            <h2>⚙️ Game Settings</h2>
-            
-            <div style="text-align: center; margin-bottom: 20px;">
-                <strong>Difficulty Presets:</strong>
-            </div>
-            <div class="preset-buttons">
-                <button id="easyBtn">Easy</button>
-                <button id="mediumBtn" class="active">Medium</button>
-                <button id="hardBtn">Hard</button>
-            </div>
-
-            <div class="setting-group">
-                <label>
-                    Initial Speed: <span class="setting-value" id="speedValue">5</span>
-                </label>
-                <input type="range" id="speedSlider" min="2" max="10" step="0.5" value="5">
-            </div>
-
-            <div class="setting-group">
-                <label>
-                    Max Speed: <span class="setting-value" id="maxSpeedValue">15</span>
-                </label>
-                <input type="range" id="maxSpeedSlider" min="10" max="25" step="1" value="15">
-            </div>
-
-            <div class="setting-group">
-                <label>
-                    Jump Force: <span class="setting-value" id="jumpForceValue">90</span>
-                </label>
-                <input type="range" id="jumpForceSlider" min="50" max="120" step="5" value="90">
-            </div>
-
-            <div class="setting-group">
-                <label>
-                    Gravity: <span class="setting-value" id="gravityValue">0.3</span>
-                </label>
-                <input type="range" id="gravitySlider" min="0.2" max="1.2" step="0.05" value="0.3">
-            </div>
-
-            <div class="setting-group">
-                <label>
-                    Mouse Sensitivity (Jump Threshold): <span class="setting-value" id="sensitivityValue">7</span>
-                </label>
-                <input type="range" id="sensitivitySlider" min="3" max="15" step="1" value="7">
-            </div>
-
-            <div class="setting-group">
-                <label>
-                    Fall Speed Sensitivity: <span class="setting-value" id="fallSensitivityValue">5</span>
-                </label>
-                <input type="range" id="fallSensitivitySlider" min="2" max="10" step="1" value="5">
-            </div>
-
-            <div class="setting-group">
-                <label>
-                    Obstacle Frequency: <span class="setting-value" id="obstacleFreqValue">Medium</span>
-                </label>
-                <input type="range" id="obstacleFreqSlider" min="60" max="180" step="20" value="120">
-            </div>
-
-            <div class="setting-group">
-                <label>
-                    Fast Fall Multiplier: <span class="setting-value" id="fallMultiplierValue">2.5</span>
-                </label>
-                <input type="range" id="fallMultiplierSlider" min="1.5" max="4" step="0.5" value="2.5">
-            </div>
-
-            <div class="button-group">
-                <button id="saveSettingsBtn">Save & Apply</button>
-                <button id="resetSettingsBtn" class="secondary">Reset to Default</button>
-                <button id="closeSettingsBtn" class="secondary">Close</button>
-            </div>
-        </div>
+        <a href="settings.html" class="settings-btn" style="text-decoration: none; display: none;">⚙️ Settings</a>
 
         <div id="gameOver">
             <h1 id="scoreNumber">100</h1>
@@ -721,7 +646,10 @@
             jumpSensitivity: 7,
             fallSensitivity: 5,
             obstacleInterval: 120,
-            fallMultiplier: 2.5
+            fallMultiplier: 2.5,
+            obstacleSpawnRate: 20,
+            positiveCollectibleRate: 91,
+            dropRate: 120
         };
 
         // Difficulty presets
@@ -744,7 +672,10 @@
                 jumpSensitivity: 7,
                 fallSensitivity: 5,
                 obstacleInterval: 120,
-                fallMultiplier: 2.5
+                fallMultiplier: 2.5,
+                obstacleSpawnRate: 20,
+                positiveCollectibleRate: 91,
+                dropRate: 120
             },
             hard: {
                 initialSpeed: 9.6,
@@ -772,55 +703,20 @@
             localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
         }
 
-        // Apply settings to UI sliders
+        // Apply settings to UI sliders (removed - now in separate settings page)
         function applySettingsToUI() {
-            document.getElementById('speedSlider').value = gameSettings.initialSpeed;
-            document.getElementById('speedValue').textContent = gameSettings.initialSpeed;
-            
-            document.getElementById('maxSpeedSlider').value = gameSettings.maxSpeed;
-            document.getElementById('maxSpeedValue').textContent = gameSettings.maxSpeed;
-            
-            document.getElementById('jumpForceSlider').value = gameSettings.jumpForce;
-            document.getElementById('jumpForceValue').textContent = gameSettings.jumpForce;
-            
-            document.getElementById('gravitySlider').value = gameSettings.gravity;
-            document.getElementById('gravityValue').textContent = gameSettings.gravity;
-            
-            document.getElementById('sensitivitySlider').value = gameSettings.jumpSensitivity;
-            document.getElementById('sensitivityValue').textContent = gameSettings.jumpSensitivity;
-            
-            document.getElementById('fallSensitivitySlider').value = gameSettings.fallSensitivity;
-            document.getElementById('fallSensitivityValue').textContent = gameSettings.fallSensitivity;
-            
-            document.getElementById('obstacleFreqSlider').value = gameSettings.obstacleInterval;
-            updateObstacleFreqLabel(gameSettings.obstacleInterval);
-            
-            document.getElementById('fallMultiplierSlider').value = gameSettings.fallMultiplier;
-            document.getElementById('fallMultiplierValue').textContent = gameSettings.fallMultiplier;
+            // Settings UI is now on a separate page
         }
 
-        // Update obstacle frequency label
+        // Update obstacle frequency label (removed - now in separate settings page)
         function updateObstacleFreqLabel(value) {
-            let label = 'Medium';
-            if (value <= 80) label = 'Very High';
-            else if (value <= 100) label = 'High';
-            else if (value <= 140) label = 'Medium';
-            else if (value <= 160) label = 'Low';
-            else label = 'Very Low';
-            document.getElementById('obstacleFreqValue').textContent = label;
+            // Not needed in main game
         }
 
         // Apply preset difficulty
         function applyPreset(preset) {
             gameSettings = { ...difficultyPresets[preset] };
-            applySettingsToUI();
             saveSettings();
-            
-            // Update active button
-            document.querySelectorAll('.preset-buttons button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            document.getElementById(preset + 'Btn').classList.add('active');
         }
 
         // Initialize settings
@@ -1051,10 +947,11 @@
 
         // Create obstacle
         function createObstacle() {
-            const rand = Math.random();
+            const rand = Math.random() * 100;
+            const obstacleRate = gameSettings.obstacleSpawnRate || 20;
             
-            // 20% ground obstacles, 80% collectibles (high spawn rate for positive items)
-            if (rand < 0.2) {
+            // Use dynamic obstacle spawn rate from settings
+            if (rand < obstacleRate) {
                 // Ground obstacle (challenging but jumpable)
                 let obstacle = {
                     x: canvas.width,
@@ -1067,8 +964,17 @@
                 obstacle.y = groundY - obstacle.height;
                 obstacles.push(obstacle);
             } else {
-                // Collectible points (high positive rate: 5 bone, 5 arm, 1 bomb)
-                const collectibleTypes = ['bone', 'arm', 'bone', 'arm', 'bone', 'arm', 'bone', 'arm', 'bone', 'arm', 'bomb'];
+                // Collectible points - use dynamic positive rate from settings
+                const positiveRate = gameSettings.positiveCollectibleRate || 91;
+                const isPositive = Math.random() * 100 < positiveRate;
+                
+                // Create weighted array based on positive rate
+                let collectibleTypes;
+                if (isPositive) {
+                    collectibleTypes = ['bone', 'arm'];
+                } else {
+                    collectibleTypes = ['bomb'];
+                }
                 const pointValues = { bone: 5, arm: 5, bomb: -2 };
                 const randomType = collectibleTypes[Math.floor(Math.random() * collectibleTypes.length)];
                 
@@ -1129,8 +1035,11 @@
         function updateObstacles(deltaTime, effectiveSpeed = gameSpeed) {
             obstacleTimer++;
 
+            // Use drop rate from settings
+            const currentDropRate = gameSettings.dropRate || obstacleInterval;
+            
             // Create new obstacle - limit total for performance
-            if (obstacleTimer > obstacleInterval && obstacles.length < 12) {
+            if (obstacleTimer > currentDropRate && obstacles.length < 12) {
                 createObstacle();
                 obstacleTimer = 0;
                 // Decrease interval slightly, min 85 frames
@@ -1467,101 +1376,6 @@
             timeRemainingDiv.style.display = 'none';
         }
 
-        // Settings UI Elements
-        const settingsScreen = document.getElementById('settings');
-        const settingsBtn = document.getElementById('settingsBtn');
-        const saveSettingsBtn = document.getElementById('saveSettingsBtn');
-        const resetSettingsBtn = document.getElementById('resetSettingsBtn');
-        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
-        const easyBtn = document.getElementById('easyBtn');
-        const mediumBtn = document.getElementById('mediumBtn');
-        const hardBtn = document.getElementById('hardBtn');
-
-        // Settings sliders
-        const speedSlider = document.getElementById('speedSlider');
-        const maxSpeedSlider = document.getElementById('maxSpeedSlider');
-        const jumpForceSlider = document.getElementById('jumpForceSlider');
-        const gravitySlider = document.getElementById('gravitySlider');
-        const sensitivitySlider = document.getElementById('sensitivitySlider');
-        const fallSensitivitySlider = document.getElementById('fallSensitivitySlider');
-        const obstacleFreqSlider = document.getElementById('obstacleFreqSlider');
-        const fallMultiplierSlider = document.getElementById('fallMultiplierSlider');
-
-        // Slider event listeners
-        speedSlider.addEventListener('input', (e) => {
-            document.getElementById('speedValue').textContent = e.target.value;
-        });
-
-        maxSpeedSlider.addEventListener('input', (e) => {
-            document.getElementById('maxSpeedValue').textContent = e.target.value;
-        });
-
-        jumpForceSlider.addEventListener('input', (e) => {
-            document.getElementById('jumpForceValue').textContent = e.target.value;
-        });
-
-        gravitySlider.addEventListener('input', (e) => {
-            document.getElementById('gravityValue').textContent = e.target.value;
-        });
-
-        sensitivitySlider.addEventListener('input', (e) => {
-            document.getElementById('sensitivityValue').textContent = e.target.value;
-        });
-
-        fallSensitivitySlider.addEventListener('input', (e) => {
-            document.getElementById('fallSensitivityValue').textContent = e.target.value;
-        });
-
-        obstacleFreqSlider.addEventListener('input', (e) => {
-            updateObstacleFreqLabel(e.target.value);
-        });
-
-        fallMultiplierSlider.addEventListener('input', (e) => {
-            document.getElementById('fallMultiplierValue').textContent = e.target.value;
-        });
-
-        // Settings button handlers
-        settingsBtn.addEventListener('click', () => {
-            settingsScreen.style.display = 'block';
-        });
-
-        closeSettingsBtn.addEventListener('click', () => {
-            settingsScreen.style.display = 'none';
-        });
-
-        saveSettingsBtn.addEventListener('click', () => {
-            gameSettings.initialSpeed = parseFloat(speedSlider.value);
-            gameSettings.maxSpeed = parseFloat(maxSpeedSlider.value);
-            gameSettings.jumpForce = parseFloat(jumpForceSlider.value);
-            gameSettings.gravity = parseFloat(gravitySlider.value);
-            gameSettings.jumpSensitivity = parseFloat(sensitivitySlider.value);
-            gameSettings.fallSensitivity = parseFloat(fallSensitivitySlider.value);
-            gameSettings.obstacleInterval = parseFloat(obstacleFreqSlider.value);
-            gameSettings.fallMultiplier = parseFloat(fallMultiplierSlider.value);
-            
-            saveSettings();
-            applySettingsToPlayer();
-            
-            // Remove active class from presets since custom settings were saved
-            document.querySelectorAll('.preset-buttons button').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            settingsScreen.style.display = 'none';
-            alert('Settings saved! Changes will apply to your next game.');
-        });
-
-        resetSettingsBtn.addEventListener('click', () => {
-            if (confirm('Reset all settings to default (Medium difficulty)?')) {
-                applyPreset('medium');
-            }
-        });
-
-        // Preset buttons
-        easyBtn.addEventListener('click', () => applyPreset('easy'));
-        mediumBtn.addEventListener('click', () => applyPreset('medium'));
-        hardBtn.addEventListener('click', () => applyPreset('hard'));
-
         // Event listeners
         welcomeBtn.addEventListener('click', () => { playSound('select'); showInstructions(); });
         restartBtn.addEventListener('click', () => {
@@ -1589,8 +1403,7 @@
 
         // Apply hover-to-click to all buttons
         const allButtons = [
-            welcomeBtn, restartBtn, settingsBtn, closeSettingsBtn,
-            saveSettingsBtn, resetSettingsBtn, easyBtn, mediumBtn, hardBtn
+            welcomeBtn, restartBtn
         ];
         
         allButtons.forEach(button => addHoverClickToButton(button));
