@@ -279,7 +279,7 @@
             display: none;
             justify-content: center;
             align-items: flex-end;
-            padding-bottom: 180px;
+            padding-bottom: 270px;
 
         }
 
@@ -1053,8 +1053,8 @@
         function createObstacle() {
             const rand = Math.random();
             
-            // 40% ground obstacles, 60% collectibles (more positive items)
-            if (rand < 0.4) {
+            // 20% ground obstacles, 80% collectibles (high spawn rate for positive items)
+            if (rand < 0.2) {
                 // Ground obstacle (challenging but jumpable)
                 let obstacle = {
                     x: canvas.width,
@@ -1067,8 +1067,8 @@
                 obstacle.y = groundY - obstacle.height;
                 obstacles.push(obstacle);
             } else {
-                // Collectible points (more positive items: 2 bone, 2 arm, 1 bomb)
-                const collectibleTypes = ['bone', 'arm', 'bone', 'arm', 'bomb'];
+                // Collectible points (high positive rate: 5 bone, 5 arm, 1 bomb)
+                const collectibleTypes = ['bone', 'arm', 'bone', 'arm', 'bone', 'arm', 'bone', 'arm', 'bone', 'arm', 'bomb'];
                 const pointValues = { bone: 5, arm: 5, bomb: -2 };
                 const randomType = collectibleTypes[Math.floor(Math.random() * collectibleTypes.length)];
                 
@@ -1126,7 +1126,7 @@
         }
 
         // Update obstacles
-        function updateObstacles(deltaTime) {
+        function updateObstacles(deltaTime, effectiveSpeed = gameSpeed) {
             obstacleTimer++;
 
             // Create new obstacle - limit total for performance
@@ -1140,7 +1140,7 @@
             // Move obstacles at consistent speed
             for (let i = obstacles.length - 1; i >= 0; i--) {
                 const obstacle = obstacles[i];
-                obstacle.x -= gameSpeed;
+                obstacle.x -= effectiveSpeed;
 
                 // Award points when obstacle passes player
                 if (obstacle.x + obstacle.width < player.x && !obstacle.passed && obstacle.type === 'ground') {
@@ -1281,10 +1281,10 @@
         }
 
         // Draw ground
-        function drawGround(deltaTime) {
+        function drawGround(deltaTime, effectiveSpeed = gameSpeed) {
             // Draw floor image with scrolling animation
             if (floorImage.complete) {
-                floorScrollOffset += gameSpeed;
+                floorScrollOffset += effectiveSpeed;
                 const floorWidth = floorImage.width;
                 const floorHeight = canvas.height - groundY;
                 
@@ -1319,9 +1319,11 @@
             // Cap deltaTime to prevent spiral of death (max 0.1 seconds)
             const cappedDelta = Math.min(deltaTime, 0.1);
 
+            // Calculate elapsed time
+            const elapsed = (currentTime - gameStartTime) / 1000;
+
             // Update timer every 6 frames (10 times per second)
             if (frameCount % 6 === 0) {
-                const elapsed = (currentTime - gameStartTime) / 1000;
                 gameTimer = Math.max(0, GAME_DURATION - elapsed);
                 const timeFormatted = Math.ceil(gameTimer).toString().padStart(2, '0');
                 timeLeftElement.textContent = '00:' + timeFormatted;
@@ -1341,14 +1343,18 @@
                 return;
             }
 
+            // Speed boost for first 10 seconds (1.5x speed multiplier)
+            const speedMultiplier = elapsed < 10 ? 1.5 : 1;
+            const currentEffectiveSpeed = gameSpeed * speedMultiplier;
+
             // Update game with fixed timestep
             updatePlayer();
-            updateObstacles(cappedDelta);
+            updateObstacles(cappedDelta, currentEffectiveSpeed);
             checkGameOver();
             if (gameSpeed < maxSpeed) gameSpeed += speedIncrement;
 
             drawBackground();
-            drawGround(cappedDelta);
+            drawGround(cappedDelta, currentEffectiveSpeed);
             drawObstacles();
             drawPlayer();
 
