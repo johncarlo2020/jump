@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="max-age=31536000">
     <title>Air Mouse Runner</title>
     <style>
         @font-face {
@@ -45,6 +44,8 @@
             cursor: none;
             width: 100%;
             height: 100%;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
         }
 
         #ui {
@@ -62,21 +63,20 @@
             position: absolute;
             top: 20px;
             left: 20px;
-            width: 120px;
-            height: 120px;
+            width: 144px;
+            height: 144px;
             pointer-events: none;
         }
 
         #timeDisplay {
             position: absolute;
             top: 30px;
-            left: 50%;
-            transform: translateX(-50%);
+            left: 200px;
             background: #1B4F91;
             color: white;
-            padding: 15px 40px;
-            border-radius: 15px;
-            font-size: 28px;
+            padding: 18px 54px;
+            border-radius: 18px;
+            font-size: 38px;
             font-weight: bold;
             text-shadow: none;
             pointer-events: none;
@@ -96,9 +96,9 @@
             right: 30px;
             background: #1B4F91;
             color: white;
-            padding: 15px 40px;
-            border-radius: 15px;
-            font-size: 28px;
+            padding: 18px 54px;
+            border-radius: 18px;
+            font-size: 38px;
             font-weight: bold;
             text-shadow: none;
             pointer-events: none;
@@ -296,6 +296,11 @@
             align-items: center;
             justify-content: center;
             text-transform: lowercase;
+            transition: transform 0.3s ease;
+        }
+
+        #instructionText:hover {
+            transform: scale(1.05);
         }
 
         #instructionText img {
@@ -506,18 +511,20 @@
         }
 
         @keyframes shake {
-            0%, 100% { transform: translate(0, 0); }
-            10%, 30%, 50%, 70%, 90% { transform: translate(-10px, 0); }
-            20%, 40%, 60%, 80% { transform: translate(10px, 0); }
+            0%, 100% { transform: translate3d(0, 0, 0); }
+            25% { transform: translate3d(-3px, 0, 0); }
+            75% { transform: translate3d(3px, 0, 0); }
         }
 
         .shake {
-            animation: shake 0.5s;
+            animation: shake 0.2s ease-in-out;
+            will-change: transform;
         }
 
         #gameCanvas.red-border {
-            box-shadow: inset 0 0 0 30px rgba(255, 0, 0, 0.6);
-            filter: brightness(0.7) saturate(1.5);
+            box-shadow: inset 0 0 0 40px rgba(255, 0, 0, 0.7);
+            filter: brightness(0.8) saturate(2) hue-rotate(-10deg);
+            transition: all 0.1s ease-out;
         }
     </style>
 </head>
@@ -642,7 +649,10 @@
     <script>
         // Canvas setup
         const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d', { alpha: false, desynchronized: true });
+        
+        // Disable image smoothing for better performance
+        ctx.imageSmoothingEnabled = false;
 
         // UI elements
         const scoreElement = document.getElementById('score');
@@ -704,9 +714,9 @@
 
         // Game settings with defaults (Medium difficulty)
         let gameSettings = {
-            initialSpeed: 4,
-            maxSpeed: 12,
-            jumpForce: 17,
+            initialSpeed: 6,
+            maxSpeed: 18,
+            jumpForce: 20,
             gravity: 0.5,
             jumpSensitivity: 7,
             fallSensitivity: 5,
@@ -717,9 +727,9 @@
         // Difficulty presets
         const difficultyPresets = {
             easy: {
-                initialSpeed: 2.4,
-                maxSpeed: 8,
-                jumpForce: 16,
+                initialSpeed: 4,
+                maxSpeed: 12,
+                jumpForce: 19,
                 gravity: 0.45,
                 jumpSensitivity: 8,
                 fallSensitivity: 6,
@@ -727,9 +737,9 @@
                 fallMultiplier: 2
             },
             medium: {
-                initialSpeed: 4,
-                maxSpeed: 12,
-                jumpForce: 17,
+                initialSpeed: 6,
+                maxSpeed: 18,
+                jumpForce: 20,
                 gravity: 0.5,
                 jumpSensitivity: 7,
                 fallSensitivity: 5,
@@ -737,9 +747,9 @@
                 fallMultiplier: 2.5
             },
             hard: {
-                initialSpeed: 5.6,
-                maxSpeed: 16,
-                jumpForce: 18,
+                initialSpeed: 8,
+                maxSpeed: 24,
+                jumpForce: 22,
                 gravity: 0.55,
                 jumpSensitivity: 5,
                 fallSensitivity: 3,
@@ -981,12 +991,23 @@
         let maxSpeed = gameSettings.maxSpeed;
         const speedIncrement = 0.0016;
 
+        // Performance optimization
+        let lastTime = performance.now();
+
+        // Handle tab visibility to prevent issues
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && gameRunning) {
+                // Reset timing when returning to tab
+                lastTime = performance.now();
+            }
+        });
+
         // Background scroll
         let scrollOffset = 0;
         let floorScrollOffset = 0;
         let cloudScrollOffset = 0;
 
-        // Mouse movement handler
+        // Remove console.log statements from game loop
         window.addEventListener('mousemove', (e) => {
             currentMouseY = e.clientY;
             
@@ -997,7 +1018,6 @@
             // Jump detection: mouse moved UP by threshold (more sensitive)
             if (deltaY > 3 && !player.isJumping) {
                 jump();
-                console.log('Jump from mouse! Delta:', deltaY);
             }
 
             // Fast fall detection: mouse moved DOWN
@@ -1019,15 +1039,13 @@
 
         // Jump function
         function jump() {
-            // More forgiving ground check - allow jump if close to ground
+            // More forgiving ground check - allow jump if close to ground or already on ground
             const distanceFromGround = (groundY - player.height) - player.y;
-            if (distanceFromGround >= -20 && distanceFromGround <= 5) {
+            // Extended range to prevent delay after getting hit
+            if (distanceFromGround >= -30 && distanceFromGround <= 10) {
                 player.velocityY = player.jumpForce;
                 player.isJumping = true;
                 playSound('select');
-                console.log('Jump triggered! Jump force:', player.jumpForce, 'From ground:', distanceFromGround);
-            } else {
-                console.log('Cannot jump - not on ground. Distance:', distanceFromGround);
             }
         }
 
@@ -1104,30 +1122,34 @@
         }
 
         // Update obstacles
-        function updateObstacles() {
+        function updateObstacles(deltaTime) {
             obstacleTimer++;
 
-            // Create new obstacle
-            if (obstacleTimer > obstacleInterval) {
+            // Create new obstacle - limit total for performance
+            if (obstacleTimer > obstacleInterval && obstacles.length < 12) {
                 createObstacle();
                 obstacleTimer = 0;
-                // Decrease interval slightly for more challenge
-                obstacleInterval = Math.max(60, obstacleInterval - 0.5);
+                // Decrease interval slightly, min 85 frames
+                obstacleInterval = Math.max(85, obstacleInterval - 0.2);
             }
 
-            // Move and remove obstacles
-            obstacles = obstacles.filter(obstacle => {
+            // Move obstacles at consistent speed
+            for (let i = obstacles.length - 1; i >= 0; i--) {
+                const obstacle = obstacles[i];
                 obstacle.x -= gameSpeed;
 
                 // Award points when obstacle passes player
-                if (obstacle.x + obstacle.width < player.x && !obstacle.passed) {
+                if (obstacle.x + obstacle.width < player.x && !obstacle.passed && obstacle.type === 'ground') {
                     obstacle.passed = true;
                     score += 10;
                     scoreElement.textContent = score;
                 }
 
-                return obstacle.x + obstacle.width > 0;
-            });
+                // Remove if far off screen
+                if (obstacle.x + obstacle.width < -100) {
+                    obstacles.splice(i, 1);
+                }
+            }
         }
 
         // Check collisions (AABB) - with more forgiving hitbox
@@ -1165,19 +1187,16 @@
                     if (playerBottom > obstacleTop + 80 && checkCollision(player, obstacle)) {
                         // Hit ground obstacle - deduct 2 points
                         obstacle.hit = true;
-                        score -= 2;
+                        score = Math.max(0, score - 2);
                         scoreElement.textContent = score;
                         
                         playSound('bomb');
                         
-                        // Add shake effect to game container
-                        const gameContainer = document.getElementById('gameContainer');
-                        gameContainer.classList.add('shake');
-                        setTimeout(() => gameContainer.classList.remove('shake'), 500);
-                        
-                        // Add red border effect to canvas
+                        // Add subtle shake and red flash effect
+                        canvas.classList.add('shake');
+                        setTimeout(() => canvas.classList.remove('shake'), 200);
                         canvas.classList.add('red-border');
-                        setTimeout(() => canvas.classList.remove('red-border'), 500);
+                        setTimeout(() => canvas.classList.remove('red-border'), 200);
                         
                         // Show floating point popup at obstacle center
                         showPointPopup(obstacle.x + obstacle.width / 2, obstacle.y + obstacle.height / 2, -2);
@@ -1192,20 +1211,17 @@
                         obstacle.collected = true;
                         collectedItems++;
                         const points = obstacle.pointValue;
-                        score += points;
+                        score = Math.max(0, score + points);
                         scoreElement.textContent = score;
                         
                         // Play appropriate sound based on collectible type
                         if (obstacle.collectibleType === 'bomb') {
                             playSound('bomb');
-                            // Add shake effect to game container
-                            const gameContainer = document.getElementById('gameContainer');
-                            gameContainer.classList.add('shake');
-                            setTimeout(() => gameContainer.classList.remove('shake'), 500);
-                            
-                            // Add red border effect to canvas
+                            // Add subtle shake and red flash effect
+                            canvas.classList.add('shake');
+                            setTimeout(() => canvas.classList.remove('shake'), 200);
                             canvas.classList.add('red-border');
-                            setTimeout(() => canvas.classList.remove('red-border'), 500);
+                            setTimeout(() => canvas.classList.remove('red-border'), 200);
                         } else if (points < 0) {
                             playSound('wrongItem');
                         } else {
@@ -1221,133 +1237,61 @@
 
         // Draw player
         function drawPlayer() {
-            // Use jumping sprite when in air, running sprite when on ground
             const sprite = player.isJumping ? jumpingSprite : runningSprite;
             
-            // Draw the sprite
             if (sprite.complete && sprite.naturalWidth > 0) {
                 ctx.drawImage(sprite, player.x, player.y, player.width, player.height);
             } else {
-                // Fallback to rectangle if image not loaded
                 ctx.fillStyle = player.color;
                 ctx.fillRect(player.x, player.y, player.width, player.height);
-                
-                // Draw eyes
-                ctx.fillStyle = 'white';
-                ctx.fillRect(player.x + 10, player.y + 10, 8, 8);
-                ctx.fillRect(player.x + 25, player.y + 10, 8, 8);
-                
-                ctx.fillStyle = 'black';
-                ctx.fillRect(player.x + 13, player.y + 13, 3, 3);
-                ctx.fillRect(player.x + 28, player.y + 13, 3, 3);
-            }
-            
-            // Debug: Draw collision box
-            if (debugMode) {
-                const padding = 50;
-                ctx.strokeStyle = 'lime';
-                ctx.lineWidth = 3;
-                ctx.strokeRect(
-                    player.x + padding, 
-                    player.y + padding, 
-                    player.width - padding * 2, 
-                    player.height - padding * 2
-                );
             }
         }
 
         // Draw obstacles
         function drawObstacles() {
-            obstacles.forEach(obstacle => {
+            for (let i = 0; i < obstacles.length; i++) {
+                const obstacle = obstacles[i];
+                
                 if (obstacle.type === 'ground') {
-                    // Draw ground obstacles using images
                     const img = obstacleImages[obstacle.imageIndex];
-                    if (img && img.complete && img.naturalWidth > 0) {
+                    if (img?.complete && img.naturalWidth > 0) {
                         ctx.drawImage(img, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
                     } else {
-                        // Fallback to rectangle
                         ctx.fillStyle = obstacle.color;
                         ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-                        
-                        ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
-                        ctx.lineWidth = 2;
-                        ctx.strokeRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
                     }
-                } else if (obstacle.type === 'collectible' && !obstacle.collected) {
-                    // Draw collectible points (bone, arm, or bomb)
-                    const collectibleImage = collectibleImages[obstacle.collectibleType];
-                    
-                    if (collectibleImage && collectibleImage.complete && collectibleImage.naturalWidth > 0) {
-                        ctx.drawImage(collectibleImage, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                } else if (!obstacle.collected) {
+                    const img = collectibleImages[obstacle.collectibleType];
+                    if (img?.complete && img.naturalWidth > 0) {
+                        ctx.drawImage(img, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
                     } else {
-                        // Fallback to colored circle if image not loaded
                         const centerX = obstacle.x + obstacle.width / 2;
                         const centerY = obstacle.y + obstacle.height / 2;
-                        const radius = obstacle.width / 2;
-                        
-                        // Different colors for different types
-                        const colors = { bone: '#ffffff', arm: '#ffcccc', bomb: '#333333' };
-                        ctx.fillStyle = colors[obstacle.collectibleType] || '#ffffff';
-                        
+                        ctx.fillStyle = obstacle.collectibleType === 'bomb' ? '#333' : '#fff';
                         ctx.beginPath();
-                        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+                        ctx.arc(centerX, centerY, obstacle.width / 2, 0, Math.PI * 2);
                         ctx.fill();
-                        
-                        ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
-                        ctx.lineWidth = 2;
-                        ctx.beginPath();
-                        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-                        ctx.stroke();
                     }
                 }
-            });
+            }
         }
 
         // Draw ground
-        function drawGround() {
+        function drawGround(deltaTime) {
             // Draw floor image with scrolling animation
             if (floorImage.complete) {
-                // Update floor scroll position
                 floorScrollOffset += gameSpeed;
-                
-                // Get floor image dimensions
                 const floorWidth = floorImage.width;
                 const floorHeight = canvas.height - groundY;
                 
-                // Reset scroll when it reaches the floor width
-                if (floorScrollOffset >= floorWidth) {
-                    floorScrollOffset = 0;
-                }
+                if (floorScrollOffset >= floorWidth) floorScrollOffset = 0;
                 
-                // Draw two floor images for seamless scrolling
                 ctx.drawImage(floorImage, -floorScrollOffset, groundY, floorWidth, floorHeight);
                 ctx.drawImage(floorImage, floorWidth - floorScrollOffset, groundY, floorWidth, floorHeight);
             } else {
-                // Fallback if image not loaded
                 ctx.fillStyle = '#95a5a6';
                 ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
             }
-            
-            // Scrolling ground line
-            ctx.strokeStyle = '#34495e';
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            
-            const lineSpacing = 40;
-            scrollOffset += gameSpeed;
-            if (scrollOffset > lineSpacing) scrollOffset = 0;
-            
-            // Cloud animation
-            cloudScrollOffset += gameSpeed;
-            
-            // Cloud animation
-            cloudScrollOffset += gameSpeed;
-
-            for (let i = -lineSpacing; i < canvas.width; i += lineSpacing) {
-                ctx.moveTo(i + scrollOffset, groundY);
-                ctx.lineTo(i + scrollOffset + 20, groundY);
-            }
-            ctx.stroke();
         }
 
         // Draw clouds (background)
@@ -1358,54 +1302,33 @@
             gradient.addColorStop(1, '#E0F6FF');
             ctx.fillStyle = gradient;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-            // Simple clouds
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
-            const cloudPositions = [
-                { x: canvas.width - (cloudScrollOffset * 0.3) % (canvas.width + 100), y: 80 },
-                { x: canvas.width - (cloudScrollOffset * 0.2 + 300) % (canvas.width + 100), y: 150 },
-                { x: canvas.width - (cloudScrollOffset * 0.25 + 600) % (canvas.width + 100), y: 100 }
-            ];
-
-            cloudPositions.forEach(cloud => {
-                // Draw cloud if it's visible or wrapping around
-                const drawCloud = (xPos) => {
-                    ctx.beginPath();
-                    ctx.arc(xPos, cloud.y, 30, 0, Math.PI * 2);
-                    ctx.arc(xPos + 25, cloud.y, 35, 0, Math.PI * 2);
-                    ctx.arc(xPos + 50, cloud.y, 30, 0, Math.PI * 2);
-                    ctx.fill();
-                };
-                
-                drawCloud(cloud.x);
-                // Draw wrapped cloud if it's off screen
-                if (cloud.x < 0) {
-                    drawCloud(cloud.x + canvas.width + 100);
-                }
-            });
         }
 
         // Game loop
-        function gameLoop() {
+        let frameCount = 0;
+        function gameLoop(currentTime) {
             if (!gameRunning) return;
 
-            // Update timer
-            const elapsed = (Date.now() - gameStartTime) / 1000;
-            gameTimer = Math.max(0, GAME_DURATION - elapsed);
-            const timeFormatted = Math.ceil(gameTimer).toString().padStart(2, '0');
-            timeLeftElement.textContent = '00:' + timeFormatted;
-            
-            // Warning color when time is low
-            if (gameTimer <= 5) {
-                document.getElementById('timeDisplay').style.background = '#ff6b6b';
-            } else {
-                document.getElementById('timeDisplay').style.background = '#1B4F91';
-            }
+            const deltaTime = (currentTime - lastTime) / 1000; // Convert to seconds
+            lastTime = currentTime;
 
-            // End game when time runs out
+            // Cap deltaTime to prevent spiral of death (max 0.1 seconds)
+            const cappedDelta = Math.min(deltaTime, 0.1);
+
+            // Update timer every 6 frames (10 times per second)
+            if (frameCount % 6 === 0) {
+                const elapsed = (currentTime - gameStartTime) / 1000;
+                gameTimer = Math.max(0, GAME_DURATION - elapsed);
+                const timeFormatted = Math.ceil(gameTimer).toString().padStart(2, '0');
+                timeLeftElement.textContent = '00:' + timeFormatted;
+                
+                const timeDisplay = document.getElementById('timeDisplay');
+                timeDisplay.style.background = gameTimer <= 5 ? '#ff6b6b' : '#1B4F91';
+            }
+            frameCount++;
+
             if (gameTimer <= 0) {
                 playSound('completed');
-                // Stop completed sound after 2 seconds
                 setTimeout(() => {
                     sounds.completed.pause();
                     sounds.completed.currentTime = 0;
@@ -1414,23 +1337,17 @@
                 return;
             }
 
-            // Update
+            // Update game with fixed timestep
             updatePlayer();
-            updateObstacles();
+            updateObstacles(cappedDelta);
             checkGameOver();
+            if (gameSpeed < maxSpeed) gameSpeed += speedIncrement;
 
-            // Increase speed gradually
-            if (gameSpeed < maxSpeed) {
-                gameSpeed += speedIncrement;
-            }
-
-            // Draw
             drawBackground();
-            drawGround();
+            drawGround(cappedDelta);
             drawObstacles();
             drawPlayer();
 
-            // Continue loop
             requestAnimationFrame(gameLoop);
         }
 
@@ -1443,6 +1360,8 @@
 
         // Start game
         async function startGame() {
+            playSound('select');
+            
             // Wait for assets to load if not ready
             if (!assetsReady) {
                 countdownElement.textContent = 'Memuatkan...';
@@ -1502,9 +1421,10 @@
             
             // Start game
             gameRunning = true;
-            gameStartTime = Date.now();
+            lastTime = performance.now();
+            gameStartTime = performance.now();
             playSound('background');
-            gameLoop();
+            requestAnimationFrame(gameLoop);
         }
 
         // End game
@@ -1639,6 +1559,49 @@
             location.reload();
         });
 
+        // Add hover-to-click functionality for all buttons (1 second hover)
+        function addHoverClickToButton(button) {
+            let hoverTimer = null;
+            
+            button.addEventListener('mouseenter', () => {
+                hoverTimer = setTimeout(() => {
+                    button.click();
+                }, 1000);
+            });
+            
+            button.addEventListener('mouseleave', () => {
+                if (hoverTimer) {
+                    clearTimeout(hoverTimer);
+                    hoverTimer = null;
+                }
+            });
+        }
+
+        // Apply hover-to-click to all buttons
+        const allButtons = [
+            welcomeBtn, restartBtn, settingsBtn, closeSettingsBtn,
+            saveSettingsBtn, resetSettingsBtn, easyBtn, mediumBtn, hardBtn
+        ];
+        
+        allButtons.forEach(button => addHoverClickToButton(button));
+
+        // Add hover-to-click for instruction text (1 second)
+        const instructionText = document.getElementById('instructionText');
+        let instructionHoverTimer = null;
+        
+        instructionText.addEventListener('mouseenter', () => {
+            instructionHoverTimer = setTimeout(() => {
+                instructionText.click();
+            }, 1000);
+        });
+        
+        instructionText.addEventListener('mouseleave', () => {
+            if (instructionHoverTimer) {
+                clearTimeout(instructionHoverTimer);
+                instructionHoverTimer = null;
+            }
+        });
+
         // Keyboard support (optional - for testing)
         window.addEventListener('keydown', (e) => {
             if (!gameRunning) return;
@@ -1646,7 +1609,6 @@
             if (e.code === 'Space' || e.code === 'ArrowUp') {
                 e.preventDefault();
                 jump();
-                console.log('Jump from keyboard!');
             }
         });
     </script>
