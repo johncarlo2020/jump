@@ -284,7 +284,7 @@
         }
 
         #instructionText {
-            font-size: 80px;
+            font-size: 68px;
             font-weight: 900;
             color: white;
             -webkit-text-stroke: 8px #1B4F91;
@@ -304,7 +304,7 @@
         }
 
         #instructionText img {
-            height: 80px;
+            height: 68px;
             margin: 0 20px;
             vertical-align: middle;
         }
@@ -714,8 +714,8 @@
 
         // Game settings with defaults (Medium difficulty)
         let gameSettings = {
-            initialSpeed: 6,
-            maxSpeed: 18,
+            initialSpeed: 7.2,
+            maxSpeed: 21.6,
             jumpForce: 20,
             gravity: 0.5,
             jumpSensitivity: 7,
@@ -727,8 +727,8 @@
         // Difficulty presets
         const difficultyPresets = {
             easy: {
-                initialSpeed: 4,
-                maxSpeed: 12,
+                initialSpeed: 4.8,
+                maxSpeed: 14.4,
                 jumpForce: 19,
                 gravity: 0.45,
                 jumpSensitivity: 8,
@@ -737,8 +737,8 @@
                 fallMultiplier: 2
             },
             medium: {
-                initialSpeed: 6,
-                maxSpeed: 18,
+                initialSpeed: 7.2,
+                maxSpeed: 21.6,
                 jumpForce: 20,
                 gravity: 0.5,
                 jumpSensitivity: 7,
@@ -747,8 +747,8 @@
                 fallMultiplier: 2.5
             },
             hard: {
-                initialSpeed: 8,
-                maxSpeed: 24,
+                initialSpeed: 9.6,
+                maxSpeed: 28.8,
                 jumpForce: 22,
                 gravity: 0.55,
                 jumpSensitivity: 5,
@@ -1053,8 +1053,8 @@
         function createObstacle() {
             const rand = Math.random();
             
-            // 60% ground obstacles, 40% collectibles
-            if (rand < 0.6) {
+            // 40% ground obstacles, 60% collectibles (more positive items)
+            if (rand < 0.4) {
                 // Ground obstacle (challenging but jumpable)
                 let obstacle = {
                     x: canvas.width,
@@ -1067,8 +1067,8 @@
                 obstacle.y = groundY - obstacle.height;
                 obstacles.push(obstacle);
             } else {
-                // Collectible points (bone, arm, or bomb)
-                const collectibleTypes = ['bone', 'arm', 'bomb'];
+                // Collectible points (more positive items: 2 bone, 2 arm, 1 bomb)
+                const collectibleTypes = ['bone', 'arm', 'bone', 'arm', 'bomb'];
                 const pointValues = { bone: 5, arm: 5, bomb: -2 };
                 const randomType = collectibleTypes[Math.floor(Math.random() * collectibleTypes.length)];
                 
@@ -1081,13 +1081,17 @@
                     collectibleType: randomType,
                     pointValue: pointValues[randomType]
                 };
-                // Randomly position at ground level or high in the air
-                if (Math.random() < 0.5) {
+                // Position at three heights: ground, middle, or top (highest jump peak)
+                const heightRand = Math.random();
+                if (heightRand < 0.33) {
                     // Ground level
                     collectible.y = groundY - collectible.height;
+                } else if (heightRand < 0.66) {
+                    // Middle height (mid-jump)
+                    collectible.y = groundY - 200 - collectible.height;
                 } else {
-                    // High in the air (requires jumping)
-                    collectible.y = groundY - 300 - Math.random() * 100;
+                    // Top height (peak of jump - highest reachable point)
+                    collectible.y = groundY - 350 - collectible.height;
                 }
                 obstacles.push(collectible);
             }
