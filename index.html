@@ -211,7 +211,7 @@
 
         #gameOver button {
             position: absolute;
-            bottom: 480px;
+            bottom: 150px;
             padding: 30px 120px;
             font-size: 64px;
             background: #29b5e8;
@@ -1365,12 +1365,25 @@
             // Update score display
             document.getElementById('scoreNumber').textContent = score;
             
-            // Change button text based on score (30+ = success, below 30 = fail)
+            // Change button text and background based on score
             const restartButton = document.getElementById('restartBtn');
+            const scoreNumber = document.getElementById('scoreNumber');
             if (score < 50) {
                 restartButton.textContent = 'MULA LAGI';
+                // Show failed page
+                gameOverScreen.style.backgroundImage = "url('assets/page/failed.webp')";
+                // Hide score on failed page
+                scoreNumber.style.display = 'none';
+                // Keep button at original position for failed page
+                restartButton.style.bottom = '150px';
             } else {
                 restartButton.textContent = 'SELESAI';
+                // Show score page (win)
+                gameOverScreen.style.backgroundImage = "url('assets/page/score.webp')";
+                // Show score on win page
+                scoreNumber.style.display = 'block';
+                // Move button up for score page
+                restartButton.style.bottom = '480px';
             }
             
             gameOverScreen.style.display = 'flex';
