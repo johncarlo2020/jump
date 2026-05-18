@@ -95,7 +95,11 @@ let gameSettings = {
     fallMultiplier: 2.5,
     obstacleSpawnRate: 10,
     positiveCollectibleRate: 91,
-    dropRate: 80
+    dropRate: 80,
+    obstacleSize: 1.0,
+    boneSize: 100,
+    armSize: 100,
+    bombSize: 160
 };
 
 // Difficulty presets
@@ -374,15 +378,16 @@ function createObstacle() {
 
     if (rand < obstacleRate) {
         // Ground obstacle
+        const sizeMultiplier = gameSettings.obstacleSize ?? 1.0;
         const obstacle = {
             x: canvas.width,
-            width: 60 + Math.random() * 48,
-            height: 84 + Math.random() * 60,
+            width: (120 + Math.random() * 80) * sizeMultiplier,
+            height: (160 + Math.random() * 100) * sizeMultiplier,
             color: '#2c3e50',
             type: 'ground',
             imageIndex: Math.floor(Math.random() * obstacleImages.length)
         };
-        obstacle.y = groundY - obstacle.height;
+        obstacle.y = groundY - obstacle.height + 20;
         obstacles.push(obstacle);
     } else {
         // Collectible
@@ -390,7 +395,11 @@ function createObstacle() {
         const isPositive = Math.random() * 100 < positiveRate;
         const collectibleTypes = isPositive ? ['bone', 'arm'] : ['bomb'];
         const pointValues = { bone: 5, arm: 5, bomb: -2 };
-        const collectibleSizes = { bone: 100, arm: 100, bomb: 160 };
+        const collectibleSizes = {
+            bone: gameSettings.boneSize ?? 100,
+            arm: gameSettings.armSize ?? 100,
+            bomb: gameSettings.bombSize ?? 160
+        };
         const randomType = collectibleTypes[Math.floor(Math.random() * collectibleTypes.length)];
         const itemSize = collectibleSizes[randomType];
 
@@ -539,11 +548,18 @@ function checkGameOver() {
 // ─── Draw Functions ───────────────────────────────────────────────────────────
 function drawPlayer() {
     const sprite = player.isJumping ? jumpingSprite : runningSprite;
+    let drawX = player.x, drawY = player.y, drawW = player.width, drawH = player.height;
+    if (player.isJumping) {
+        drawW = player.width * 1.2;
+        drawH = player.height * 1.2;
+        drawX = player.x + (player.width - drawW) / 2;
+        drawY = player.y + player.height - drawH;
+    }
     if (sprite.complete && sprite.naturalWidth > 0) {
-        ctx.drawImage(sprite, player.x, player.y, player.width, player.height);
+        ctx.drawImage(sprite, drawX, drawY, drawW, drawH);
     } else {
         ctx.fillStyle = player.color;
-        ctx.fillRect(player.x, player.y, player.width, player.height);
+        ctx.fillRect(drawX, drawY, drawW, drawH);
     }
 }
 
@@ -635,8 +651,8 @@ function gameLoop(currentTime) {
     if (gameSpeed < maxSpeed) gameSpeed += speedIncrement;
 
     drawBackground();
-    drawGround(cappedDelta, currentEffectiveSpeed);
     drawObstacles();
+    drawGround(cappedDelta, currentEffectiveSpeed);
     drawPlayer();
 
     requestAnimationFrame(gameLoop);
@@ -748,7 +764,6 @@ function endGame() {
     gameOverScreen.style.display = 'flex';
     document.getElementById('timeDisplay').style.display = 'none';
     document.getElementById('totalDisplay').style.display = 'none';
-    document.getElementById('settingsBtn').style.display = 'block';
     timeRemainingDiv.style.display = 'none';
 }
 

@@ -14,7 +14,11 @@ const defaultSettings = {
     fallMultiplier: 2.5,
     obstacleSpawnRate: 10,
     positiveCollectibleRate: 91,
-    dropRate: 80
+    dropRate: 80,
+    obstacleSize: 1.0,
+    boneSize: 100,
+    armSize: 100,
+    bombSize: 160
 };
 
 // Difficulty presets
@@ -71,7 +75,11 @@ const sliders = {
     fallMultiplier: document.getElementById('fallMultiplierSlider'),
     obstacleSpawn: document.getElementById('obstacleSpawnSlider'),
     positiveRate: document.getElementById('positiveRateSlider'),
-    dropRate: document.getElementById('dropRateSlider')
+    dropRate: document.getElementById('dropRateSlider'),
+    obstacleSize: document.getElementById('obstacleSizeSlider'),
+    boneSize: document.getElementById('boneSizeSlider'),
+    armSize: document.getElementById('armSizeSlider'),
+    bombSize: document.getElementById('bombSizeSlider')
 };
 
 // Value display elements
@@ -85,7 +93,11 @@ const displays = {
     fallMultiplier: document.getElementById('fallMultiplierValue'),
     obstacleSpawn: document.getElementById('obstacleSpawnValue'),
     positiveRate: document.getElementById('positiveRateValue'),
-    dropRate: document.getElementById('dropRateValue')
+    dropRate: document.getElementById('dropRateValue'),
+    obstacleSize: document.getElementById('obstacleSizeValue'),
+    boneSize: document.getElementById('boneSizeValue'),
+    armSize: document.getElementById('armSizeValue'),
+    bombSize: document.getElementById('bombSizeValue')
 };
 
 // Load settings from Tauri Store
@@ -124,6 +136,18 @@ function applySettingsToUI(settings) {
 
     sliders.dropRate.value = settings.dropRate || 120;
     displays.dropRate.textContent = settings.dropRate || 120;
+
+    sliders.obstacleSize.value = settings.obstacleSize ?? 1.0;
+    displays.obstacleSize.textContent = (settings.obstacleSize ?? 1.0) + 'x';
+
+    sliders.boneSize.value = settings.boneSize ?? 100;
+    displays.boneSize.textContent = (settings.boneSize ?? 100) + 'px';
+
+    sliders.armSize.value = settings.armSize ?? 100;
+    displays.armSize.textContent = (settings.armSize ?? 100) + 'px';
+
+    sliders.bombSize.value = settings.bombSize ?? 160;
+    displays.bombSize.textContent = (settings.bombSize ?? 160) + 'px';
 }
 
 // Collect slider values and persist to Tauri Store
@@ -139,7 +163,11 @@ function saveSettings() {
         fallMultiplier: parseFloat(sliders.fallMultiplier.value),
         obstacleSpawnRate: parseFloat(sliders.obstacleSpawn.value),
         positiveCollectibleRate: parseFloat(sliders.positiveRate.value),
-        dropRate: parseFloat(sliders.dropRate.value)
+        dropRate: parseFloat(sliders.dropRate.value),
+        obstacleSize: parseFloat(sliders.obstacleSize.value),
+        boneSize: parseFloat(sliders.boneSize.value),
+        armSize: parseFloat(sliders.armSize.value),
+        bombSize: parseFloat(sliders.bombSize.value)
     };
     store.set('gameSettings', settings).then(() => store.save()).catch(console.error);
     showSuccessMessage();
@@ -170,6 +198,10 @@ sliders.fallMultiplier.addEventListener('input', (e) => { displays.fallMultiplie
 sliders.obstacleSpawn.addEventListener('input', (e) => { displays.obstacleSpawn.textContent = e.target.value + '%'; });
 sliders.positiveRate.addEventListener('input', (e) => { displays.positiveRate.textContent = e.target.value + '%'; });
 sliders.dropRate.addEventListener('input', (e) => { displays.dropRate.textContent = e.target.value; });
+sliders.obstacleSize.addEventListener('input', (e) => { displays.obstacleSize.textContent = parseFloat(e.target.value).toFixed(1) + 'x'; });
+sliders.boneSize.addEventListener('input', (e) => { displays.boneSize.textContent = e.target.value + 'px'; });
+sliders.armSize.addEventListener('input', (e) => { displays.armSize.textContent = e.target.value + 'px'; });
+sliders.bombSize.addEventListener('input', (e) => { displays.bombSize.textContent = e.target.value + 'px'; });
 
 // Preset buttons
 document.getElementById('easyBtn').addEventListener('click', () => applyPreset('easy'));
