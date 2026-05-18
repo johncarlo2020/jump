@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+src-tauri/target/
+
+# Tauri generated icons (reproducible from source)
+src-tauri/gen/
+
+# Vite cache
+.vite/
+
+# Temp icon file used for icon generation
+logo_square.png
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+*.suo
+*.user

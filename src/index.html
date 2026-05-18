@@ -1,0 +1,54 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Air Mouse Runner</title>
+    <link rel="stylesheet" href="./game.css">
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="1080" height="1920"></canvas>
+
+        <img id="logo" src="logo.webp" alt="Logo">
+
+        <div id="timeDisplay" style="display: none;">
+            MASA: <span id="timeLeft">25</span>
+        </div>
+
+        <div id="totalDisplay" style="display: none;">
+            JUMLAH: <span id="score">0</span>
+        </div>
+
+        <div id="ui" style="display: none;">
+            <div>Skor: <span id="scoreOld">0</span></div>
+            <div>High Score: <span id="highScore">0</span></div>
+        </div>
+
+        <div id="timeRemaining">
+            <div>Time: <span id="timeLeftOld">25</span>s</div>
+        </div>
+
+        <div id="countdown"></div>
+
+        <div id="welcomeScreen">
+            <button id="welcomeBtn">MULA!</button>
+        </div>
+
+        <div id="instructions">
+            <div id="instructionText" onclick="startGame()">
+                Tekan <img src="logo.webp" alt="Dutch Lady"> untuk mulakan!
+            </div>
+        </div>
+
+        <a href="settings.html" class="settings-btn" style="text-decoration: none; display: none;">Settings</a>
+
+        <div id="gameOver">
+            <h1 id="scoreNumber">100</h1>
+            <button id="restartBtn">SELESAI</button>
+        </div>
+    </div>
+
+    <script type="module" src="./game.js"></script>
+</body>
+</html>
