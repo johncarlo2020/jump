@@ -1,3 +1,5 @@
+@import '@fortawesome/fontawesome-free/css/all.min.css';
+
 @font-face {
     font-family: 'Brevia';
     src: url('font/09BREVIA-BOLD.OTF') format('opentype');
@@ -471,15 +473,19 @@ body {
     position: absolute;
     top: 30px;
     right: 30px;
-    padding: 15px 30px;
-    font-size: 24px;
+    width: 64px;
+    height: 64px;
+    font-size: 28px;
     background: rgba(0, 0, 0, 0.5);
     color: white;
     border: 2px solid white;
-    border-radius: 8px;
+    border-radius: 50%;
     cursor: pointer;
     transition: all 0.3s;
     z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .settings-btn:hover {

@@ -390,12 +390,14 @@ function createObstacle() {
         const isPositive = Math.random() * 100 < positiveRate;
         const collectibleTypes = isPositive ? ['bone', 'arm'] : ['bomb'];
         const pointValues = { bone: 5, arm: 5, bomb: -2 };
+        const collectibleSizes = { bone: 100, arm: 100, bomb: 160 };
         const randomType = collectibleTypes[Math.floor(Math.random() * collectibleTypes.length)];
+        const itemSize = collectibleSizes[randomType];
 
         const collectible = {
             x: canvas.width,
-            width: 100,
-            height: 100,
+            width: itemSize,
+            height: itemSize,
             type: 'collectible',
             collected: false,
             collectibleType: randomType,
@@ -665,6 +667,7 @@ async function startGame() {
     welcomeScreen.style.display = 'none';
     instructionsScreen.style.display = 'none';
     gameOverScreen.style.display = 'none';
+    document.getElementById('settingsBtn').style.display = 'none';
 
     // Reset state
     score = 0;
@@ -745,6 +748,7 @@ function endGame() {
     gameOverScreen.style.display = 'flex';
     document.getElementById('timeDisplay').style.display = 'none';
     document.getElementById('totalDisplay').style.display = 'none';
+    document.getElementById('settingsBtn').style.display = 'block';
     timeRemainingDiv.style.display = 'none';
 }
 
