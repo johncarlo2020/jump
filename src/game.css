@@ -227,6 +227,7 @@ body {
     bottom: 150px;
     padding: 30px 120px;
     font-size: 64px;
+    font-family: 'Brevia', 'Arial', sans-serif;
     background: #29b5e8;
     color: white;
     border: 6px solid white;
@@ -263,6 +264,7 @@ body {
 #welcomeScreen button {
     padding: 30px 120px;
     font-size: 64px;
+    font-family: 'Brevia', 'Arial', sans-serif;
     background: #29b5e8;
     color: white;
     border: 6px solid white;

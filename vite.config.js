@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite'
+import { resolve } from 'path'
 
 export default defineConfig({
   // Use relative base so asset URLs work under Tauri's asset:// protocol
@@ -9,10 +10,9 @@ export default defineConfig({
     outDir: '../dist',
     emptyOutDir: true,
     rollupOptions: {
-      // paths relative to root ('src/')
       input: {
-        main: 'index.html',
-        settings: 'settings.html',
+        main: resolve(__dirname, 'src/index.html'),
+        settings: resolve(__dirname, 'src/settings.html'),
       },
     },
   },
