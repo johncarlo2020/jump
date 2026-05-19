@@ -788,8 +788,7 @@ function addHoverClick(button) {
 const instructionText = document.getElementById('instructionText');
 addHoverClick(instructionText);
 
-// Wire onclick="startGame()" used in the HTML
-window.startGame = startGame;
+instructionText.addEventListener('click', startGame);
 
 // Keyboard fallback (Space / ArrowUp to jump)
 window.addEventListener('keydown', (e) => {
