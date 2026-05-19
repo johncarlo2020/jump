@@ -33,6 +33,9 @@ const timeRemainingDiv = document.getElementById('timeRemaining');
 const countdownElement = document.getElementById('countdown');
 const timeDisplay = document.getElementById('timeDisplay');
 const gameContainer = document.getElementById('gameContainer');
+const settingsBtn = document.getElementById('settingsBtn');
+const totalDisplay = document.getElementById('totalDisplay');
+const scoreNumber = document.getElementById('scoreNumber');
 
 // Set background images
 welcomeScreen.style.backgroundImage = 'url(page/welcome.webp)';
@@ -359,8 +362,7 @@ document.addEventListener('visibilitychange', () => {
     if (!document.hidden && gameRunning) lastTime = performance.now();
 });
 
-// Background scroll offsets
-let scrollOffset = 0;
+// Background scroll offset
 let floorScrollOffset = 0;
 
 // ─── Mouse / PointerLock Controls ─────────────────────────────────────────────
@@ -422,13 +424,19 @@ function createObstacle() {
     if (rand < obstacleRate) {
         // Ground obstacle
         const sizeMultiplier = gameSettings.obstacleSize ?? 1.0;
+        const imageIndex = Math.floor(Math.random() * obstacleImages.length);
+        const img = obstacleImages[imageIndex];
+        const obstacleWidth = (120 + Math.random() * 80) * sizeMultiplier;
+        const obstacleHeight = img.naturalWidth > 0
+            ? obstacleWidth * (img.naturalHeight / img.naturalWidth)
+            : (160 + Math.random() * 100) * sizeMultiplier;
         const obstacle = {
             x: canvas.width,
-            width: (120 + Math.random() * 80) * sizeMultiplier,
-            height: (160 + Math.random() * 100) * sizeMultiplier,
+            width: obstacleWidth,
+            height: obstacleHeight,
             color: '#2c3e50',
             type: 'ground',
-            imageIndex: Math.floor(Math.random() * obstacleImages.length)
+            imageIndex
         };
         obstacle.y = groundY - obstacle.height + 20;
         obstacles.push(obstacle);
@@ -624,9 +632,9 @@ function drawObstacles() {
     }
 }
 
-function drawGround(deltaTime, effectiveSpeed = gameSpeed) {
+function drawGround(dt60, effectiveSpeed = gameSpeed) {
     if (floorImage.complete) {
-        floorScrollOffset += effectiveSpeed;
+        floorScrollOffset += effectiveSpeed * dt60;
         const fw = floorImage.width;
         const fh = canvas.height - groundY;
         if (floorScrollOffset >= fw) floorScrollOffset = 0;
@@ -692,7 +700,7 @@ function gameLoop(currentTime) {
 
     drawBackground();
     drawObstacles();
-    drawGround(cappedDelta, currentEffectiveSpeed);
+    drawGround(dt60, currentEffectiveSpeed);
     drawPlayer();
 
     requestAnimationFrame(gameLoop);
@@ -705,6 +713,7 @@ function showInstructions() {
 }
 
 async function startGame() {
+    audioCtx.resume().catch(() => {});
     playSound('select');
 
     if (!assetsReady) {
@@ -718,7 +727,7 @@ async function startGame() {
     welcomeScreen.style.display = 'none';
     instructionsScreen.style.display = 'none';
     gameOverScreen.style.display = 'none';
-    document.getElementById('settingsBtn').style.display = 'none';
+    settingsBtn.style.display = 'none';
 
     // Reset state
     score = 0;
@@ -731,7 +740,6 @@ async function startGame() {
     player.y = groundY - player.height;
     player.velocityY = 0;
     player.isJumping = false;
-    scrollOffset = 0;
     floorScrollOffset = 0;
     gameTimer = GAME_DURATION;
 
@@ -739,8 +747,8 @@ async function startGame() {
 
     scoreElement.textContent = score;
     timeLeftElement.textContent = GAME_DURATION;
-    document.getElementById('timeDisplay').style.display = 'flex';
-    document.getElementById('totalDisplay').style.display = 'flex';
+    timeDisplay.style.display = 'flex';
+    totalDisplay.style.display = 'flex';
     timeRemainingDiv.style.display = 'none';
     timeRemainingDiv.classList.remove('warning');
 
@@ -778,25 +786,23 @@ function endGame() {
         highScoreElement.textContent = highScore;
     }
 
-    document.getElementById('scoreNumber').textContent = score;
+    scoreNumber.textContent = score;
 
-    const restartButton = document.getElementById('restartBtn');
-    const scoreNumber = document.getElementById('scoreNumber');
     if (score < 50) {
-        restartButton.textContent = 'MULA LAGI';
+        restartBtn.textContent = 'MULA LAGI';
         gameOverScreen.style.backgroundImage = "url('page/failed.webp')";
         scoreNumber.style.display = 'none';
-        restartButton.style.bottom = '150px';
+        restartBtn.style.bottom = '150px';
     } else {
-        restartButton.textContent = 'SELESAI';
+        restartBtn.textContent = 'SELESAI';
         gameOverScreen.style.backgroundImage = "url('page/score.webp')";
         scoreNumber.style.display = 'block';
-        restartButton.style.bottom = '480px';
+        restartBtn.style.bottom = '480px';
     }
 
     gameOverScreen.style.display = 'flex';
-    document.getElementById('timeDisplay').style.display = 'none';
-    document.getElementById('totalDisplay').style.display = 'none';
+    timeDisplay.style.display = 'none';
+    totalDisplay.style.display = 'none';
     timeRemainingDiv.style.display = 'none';
 }
 
