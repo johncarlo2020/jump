@@ -32,6 +32,7 @@ const timeLeftElement = document.getElementById('timeLeft');
 const timeRemainingDiv = document.getElementById('timeRemaining');
 const countdownElement = document.getElementById('countdown');
 const timeDisplay = document.getElementById('timeDisplay');
+const gameContainer = document.getElementById('gameContainer');
 
 // Set background images
 welcomeScreen.style.backgroundImage = 'url(page/welcome.webp)';
@@ -108,12 +109,12 @@ let debugMode = false;
 let gameSettings = {
     initialSpeed: 7.2,
     maxSpeed: 21.6,
-    jumpForce: 34,
-    gravity: 1.3,
+    jumpForce: 42,
+    gravity: 1.8,
     jumpSensitivity: 7,
     fallSensitivity: 5,
     obstacleInterval: 120,
-    fallMultiplier: 3.5,
+    fallMultiplier: 4.5,
     obstacleSpawnRate: 10,
     positiveCollectibleRate: 91,
     dropRate: 80,
@@ -128,12 +129,12 @@ const difficultyPresets = {
     easy: {
         initialSpeed: 4.8,
         maxSpeed: 14.4,
-        jumpForce: 30,
-        gravity: 1.1,
+        jumpForce: 37,
+        gravity: 1.5,
         jumpSensitivity: 8,
         fallSensitivity: 6,
         obstacleInterval: 150,
-        fallMultiplier: 3.0,
+        fallMultiplier: 4.0,
         obstacleSpawnRate: 5,
         positiveCollectibleRate: 95,
         dropRate: 70
@@ -141,12 +142,12 @@ const difficultyPresets = {
     medium: {
         initialSpeed: 7.2,
         maxSpeed: 21.6,
-        jumpForce: 34,
-        gravity: 1.3,
+        jumpForce: 42,
+        gravity: 1.8,
         jumpSensitivity: 7,
         fallSensitivity: 5,
         obstacleInterval: 120,
-        fallMultiplier: 3.5,
+        fallMultiplier: 4.5,
         obstacleSpawnRate: 10,
         positiveCollectibleRate: 91,
         dropRate: 80
@@ -154,12 +155,12 @@ const difficultyPresets = {
     hard: {
         initialSpeed: 9.6,
         maxSpeed: 28.8,
-        jumpForce: 38,
-        gravity: 1.5,
+        jumpForce: 47,
+        gravity: 2.1,
         jumpSensitivity: 5,
         fallSensitivity: 4,
         obstacleInterval: 100,
-        fallMultiplier: 4.0,
+        fallMultiplier: 5.0,
         obstacleSpawnRate: 15,
         positiveCollectibleRate: 85,
         dropRate: 70
@@ -265,7 +266,7 @@ function applySettingsToPlayer() {
 applySettingsToPlayer();
 
 // Ground — floor occupies bottom 33% of screen
-const groundY = canvas.height * 0.67;
+const groundY = canvas.height * 0.67 - 40;
 player.y = groundY - player.height;
 
 // Load floor image
@@ -302,27 +303,42 @@ function showCountdown(number) {
     });
 }
 
+// Cached canvas rect for popup positioning — avoids forced layout reflow on every collectible
+let cachedCanvasRect = canvas.getBoundingClientRect();
+let cachedScaleX = cachedCanvasRect.width / canvas.width;
+let cachedScaleY = cachedCanvasRect.height / canvas.height;
+window.addEventListener('resize', () => {
+    cachedCanvasRect = canvas.getBoundingClientRect();
+    cachedScaleX = cachedCanvasRect.width / canvas.width;
+    cachedScaleY = cachedCanvasRect.height / canvas.height;
+});
+
+// Pre-allocated popup pool — avoids createElement + DOM insert/remove on every collectible
+const POPUP_POOL_SIZE = 5;
+const popupPool = Array.from({ length: POPUP_POOL_SIZE }, () => {
+    const el = document.createElement('div');
+    el.style.cssText = 'position:absolute;opacity:0;pointer-events:none;';
+    gameContainer.appendChild(el);
+    return { el, inUse: false, timer: null };
+});
+
 // Show floating point popup at a canvas position
 function showPointPopup(x, y, points) {
-    const popup = document.createElement('div');
-    popup.className = 'point-popup';
+    const item = popupPool.find(p => !p.inUse) ?? popupPool[0];
+    if (item.timer) clearTimeout(item.timer);
+    item.inUse = true;
 
-    if (points < 0) {
-        popup.classList.add('negative');
-        popup.textContent = points;
-    } else {
-        popup.textContent = '+' + points;
-    }
+    const popup = item.el;
+    popup.className = points < 0 ? 'point-popup negative' : 'point-popup';
+    popup.textContent = points < 0 ? String(points) : '+' + points;
+    popup.style.left = (cachedCanvasRect.left + x * cachedScaleX) + 'px';
+    popup.style.top  = (cachedCanvasRect.top  + y * cachedScaleY) + 'px';
 
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = rect.width / canvas.width;
-    const scaleY = rect.height / canvas.height;
+    // Restart CSS animation without forced reflow
+    popup.style.animation = 'none';
+    requestAnimationFrame(() => { popup.style.animation = ''; });
 
-    popup.style.left = (rect.left + x * scaleX) + 'px';
-    popup.style.top = (rect.top + y * scaleY) + 'px';
-    document.getElementById('gameContainer').appendChild(popup);
-
-    setTimeout(() => popup.remove(), 1000);
+    item.timer = setTimeout(() => { item.inUse = false; }, 1100);
 }
 
 // Obstacles array
@@ -532,10 +548,8 @@ function checkGameOver() {
                 scoreElement.textContent = score;
 
                 playSound('bomb');
-                canvas.classList.add('shake');
-                setTimeout(() => canvas.classList.remove('shake'), 200);
-                canvas.classList.add('red-border');
-                setTimeout(() => canvas.classList.remove('red-border'), 200);
+                canvas.classList.add('shake', 'red-border');
+                setTimeout(() => canvas.classList.remove('shake', 'red-border'), 200);
 
                 showPointPopup(obstacle.x + obstacle.width / 2, obstacle.y + obstacle.height / 2, -2);
                 const hitIdx = obstacles.indexOf(obstacle);
@@ -552,10 +566,8 @@ function checkGameOver() {
 
                 if (obstacle.collectibleType === 'bomb') {
                     playSound('bomb');
-                    canvas.classList.add('shake');
-                    setTimeout(() => canvas.classList.remove('shake'), 200);
-                    canvas.classList.add('red-border');
-                    setTimeout(() => canvas.classList.remove('red-border'), 200);
+                    canvas.classList.add('shake', 'red-border');
+                    setTimeout(() => canvas.classList.remove('shake', 'red-border'), 200);
                 } else if (points < 0) {
                     playSound('wrongItem');
                 } else {
@@ -579,10 +591,10 @@ function drawPlayer() {
         drawY = player.y + player.height - drawH;
     }
     if (sprite.complete && sprite.naturalWidth > 0) {
-        ctx.drawImage(sprite, drawX, drawY, drawW, drawH);
+        ctx.drawImage(sprite, Math.round(drawX), Math.round(drawY), Math.round(drawW), Math.round(drawH));
     } else {
         ctx.fillStyle = player.color;
-        ctx.fillRect(drawX, drawY, drawW, drawH);
+        ctx.fillRect(Math.round(drawX), Math.round(drawY), Math.round(drawW), Math.round(drawH));
     }
 }
 
@@ -591,15 +603,15 @@ function drawObstacles() {
         if (obstacle.type === 'ground') {
             const img = obstacleImages[obstacle.imageIndex];
             if (img?.complete && img.naturalWidth > 0) {
-                ctx.drawImage(img, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                ctx.drawImage(img, Math.round(obstacle.x), Math.round(obstacle.y), obstacle.width, obstacle.height);
             } else {
                 ctx.fillStyle = obstacle.color;
-                ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                ctx.fillRect(Math.round(obstacle.x), Math.round(obstacle.y), obstacle.width, obstacle.height);
             }
         } else if (!obstacle.collected) {
             const img = collectibleImages[obstacle.collectibleType];
             if (img?.complete && img.naturalWidth > 0) {
-                ctx.drawImage(img, obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+                ctx.drawImage(img, Math.round(obstacle.x), Math.round(obstacle.y), obstacle.width, obstacle.height);
             } else {
                 const cx = obstacle.x + obstacle.width / 2;
                 const cy = obstacle.y + obstacle.height / 2;
@@ -618,8 +630,8 @@ function drawGround(deltaTime, effectiveSpeed = gameSpeed) {
         const fw = floorImage.width;
         const fh = canvas.height - groundY;
         if (floorScrollOffset >= fw) floorScrollOffset = 0;
-        ctx.drawImage(floorImage, -floorScrollOffset, groundY, fw, fh);
-        ctx.drawImage(floorImage, fw - floorScrollOffset, groundY, fw, fh);
+        ctx.drawImage(floorImage, Math.round(-floorScrollOffset), groundY, fw, fh);
+        ctx.drawImage(floorImage, Math.round(fw - floorScrollOffset), groundY, fw, fh);
     } else {
         ctx.fillStyle = '#95a5a6';
         ctx.fillRect(0, groundY, canvas.width, canvas.height - groundY);
