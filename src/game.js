@@ -31,6 +31,7 @@ const restartBtn = document.getElementById('restartBtn');
 const timeLeftElement = document.getElementById('timeLeft');
 const timeRemainingDiv = document.getElementById('timeRemaining');
 const countdownElement = document.getElementById('countdown');
+const timeDisplay = document.getElementById('timeDisplay');
 
 // Set background images
 welcomeScreen.style.backgroundImage = 'url(page/welcome.webp)';
@@ -49,30 +50,50 @@ store.get('highScore').then(val => {
     highScoreElement.textContent = highScore;
 }).catch(() => {});
 
-// Load sound effects
-const sounds = {
-    background: new Audio('SOUNDTRACK/bg.mp3'),
-    bomb: new Audio('SOUNDTRACK/bomb effects.mp3'),
-    collect: new Audio('SOUNDTRACK/collect bird nest.mp3'),
-    completed: new Audio('SOUNDTRACK/completed.mp3'),
-    countdown: new Audio('SOUNDTRACK/countdownsound.mp3'),
-    gameOver: new Audio('SOUNDTRACK/game over .mp3'),
-    gameWon: new Audio('SOUNDTRACK/game won.mp3'),
-    buzzer: new Audio('SOUNDTRACK/long-buzzer.mp3'),
-    select: new Audio('SOUNDTRACK/select-sound.mp3'),
-    wrongItem: new Audio('SOUNDTRACK/wrong item.mp3')
-};
+// Web Audio API — all files pre-decoded at startup for zero-latency playback
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+const audioBuffers = {};
+const activeSources = {};
 
-// Configure background music to loop
-sounds.background.loop = true;
-sounds.background.volume = 0.3;
+const audioReadyPromise = Promise.all([
+    ['background', 'SOUNDTRACK/bg.mp3'],
+    ['bomb',       'SOUNDTRACK/bomb effects.mp3'],
+    ['collect',    'SOUNDTRACK/collect bird nest.mp3'],
+    ['completed',  'SOUNDTRACK/completed.mp3'],
+    ['countdown',  'SOUNDTRACK/countdownsound.mp3'],
+    ['gameOver',   'SOUNDTRACK/game over .mp3'],
+    ['gameWon',    'SOUNDTRACK/game won.mp3'],
+    ['buzzer',     'SOUNDTRACK/long-buzzer.mp3'],
+    ['select',     'SOUNDTRACK/select-sound.mp3'],
+    ['wrongItem',  'SOUNDTRACK/wrong item.mp3']
+].map(async ([name, url]) => {
+    try {
+        const res = await fetch(url);
+        const buf = await res.arrayBuffer();
+        audioBuffers[name] = await audioCtx.decodeAudioData(buf);
+    } catch (e) { console.log('Audio load failed:', name); }
+}));
 
-// Helper function to play sound
-function playSound(soundName) {
-    if (sounds[soundName]) {
-        sounds[soundName].currentTime = 0;
-        sounds[soundName].play().catch(e => console.log('Audio play failed:', e));
+function stopSound(name) {
+    if (activeSources[name]) {
+        try { activeSources[name].stop(); } catch (e) {}
+        activeSources[name] = null;
     }
+}
+
+function playSound(name) {
+    const buffer = audioBuffers[name];
+    if (!buffer) return;
+    stopSound(name);
+    const gain = audioCtx.createGain();
+    gain.gain.value = name === 'background' ? 0.3 : 1.0;
+    gain.connect(audioCtx.destination);
+    const source = audioCtx.createBufferSource();
+    source.buffer = buffer;
+    if (name === 'background') source.loop = true;
+    source.connect(gain);
+    source.start();
+    activeSources[name] = source;
 }
 
 // Timer variables
@@ -87,12 +108,12 @@ let debugMode = false;
 let gameSettings = {
     initialSpeed: 7.2,
     maxSpeed: 21.6,
-    jumpForce: 20,
-    gravity: 0.5,
+    jumpForce: 34,
+    gravity: 1.3,
     jumpSensitivity: 7,
     fallSensitivity: 5,
     obstacleInterval: 120,
-    fallMultiplier: 2.5,
+    fallMultiplier: 3.5,
     obstacleSpawnRate: 10,
     positiveCollectibleRate: 91,
     dropRate: 80,
@@ -107,12 +128,12 @@ const difficultyPresets = {
     easy: {
         initialSpeed: 4.8,
         maxSpeed: 14.4,
-        jumpForce: 19,
-        gravity: 0.45,
+        jumpForce: 30,
+        gravity: 1.1,
         jumpSensitivity: 8,
         fallSensitivity: 6,
         obstacleInterval: 150,
-        fallMultiplier: 2,
+        fallMultiplier: 3.0,
         obstacleSpawnRate: 5,
         positiveCollectibleRate: 95,
         dropRate: 70
@@ -120,12 +141,12 @@ const difficultyPresets = {
     medium: {
         initialSpeed: 7.2,
         maxSpeed: 21.6,
-        jumpForce: 20,
-        gravity: 0.5,
+        jumpForce: 34,
+        gravity: 1.3,
         jumpSensitivity: 7,
         fallSensitivity: 5,
         obstacleInterval: 120,
-        fallMultiplier: 2.5,
+        fallMultiplier: 3.5,
         obstacleSpawnRate: 10,
         positiveCollectibleRate: 91,
         dropRate: 80
@@ -133,12 +154,12 @@ const difficultyPresets = {
     hard: {
         initialSpeed: 9.6,
         maxSpeed: 28.8,
-        jumpForce: 22,
-        gravity: 0.6,
+        jumpForce: 38,
+        gravity: 1.5,
         jumpSensitivity: 5,
         fallSensitivity: 4,
         obstacleInterval: 100,
-        fallMultiplier: 3,
+        fallMultiplier: 4.0,
         obstacleSpawnRate: 15,
         positiveCollectibleRate: 85,
         dropRate: 70
@@ -196,7 +217,10 @@ collectibleImages.bomb = new Image();
 collectibleImages.bomb.src = 'points/bomb.webp';
 
 let imagesLoaded = 0;
-const totalImages = 2 + obstacleFiles.length + 3; // sprites + obstacles + collectibles
+const totalImages = 2 + obstacleFiles.length + 3 + 1; // sprites + obstacles + collectibles + floor
+
+let resolveImages;
+const imageReadyPromise = new Promise(resolve => { resolveImages = resolve; })
 
 runningSprite.onload = () => { imagesLoaded++; checkImagesLoaded(); };
 jumpingSprite.onload = () => { imagesLoaded++; checkImagesLoaded(); };
@@ -208,10 +232,7 @@ collectibleImages.bomb.onload = () => { imagesLoaded++; checkImagesLoaded(); };
 let assetsReady = false;
 function checkImagesLoaded() {
     if (imagesLoaded === totalImages) {
-        assetsReady = true;
-        if (floorImage.complete && floorImage.naturalWidth > 0) {
-            floorPattern = ctx.createPattern(floorImage, 'repeat');
-        }
+        resolveImages();
     }
 }
 
@@ -254,7 +275,13 @@ let floorPattern = null;
 
 floorImage.onload = function () {
     floorPattern = ctx.createPattern(floorImage, 'repeat');
+    imagesLoaded++;
+    checkImagesLoaded();
 };
+
+// Resolves when every image AND every audio file is fully decoded
+const assetsReadyPromise = Promise.all([imageReadyPromise, audioReadyPromise])
+    .then(() => { assetsReady = true; });
 
 // Show countdown
 function showCountdown(number) {
@@ -426,13 +453,13 @@ function createObstacle() {
 }
 
 // ─── Update Player ─────────────────────────────────────────────────────────────
-function updatePlayer() {
+function updatePlayer(dt60) {
     const gravityForce = player.isFastFalling
         ? player.gravity * player.fastFallMultiplier
         : player.gravity;
 
-    player.velocityY += gravityForce;
-    player.y += player.velocityY;
+    player.velocityY += gravityForce * dt60;
+    player.y += player.velocityY * dt60;
 
     const groundLevel = groundY - player.height;
     if (player.y >= groundLevel) {
@@ -449,8 +476,8 @@ function updatePlayer() {
 }
 
 // ─── Update Obstacles ─────────────────────────────────────────────────────────
-function updateObstacles(deltaTime, effectiveSpeed = gameSpeed) {
-    obstacleTimer++;
+function updateObstacles(dt60, effectiveSpeed = gameSpeed) {
+    obstacleTimer += dt60;
 
     const currentDropRate = gameSettings.dropRate || obstacleInterval;
 
@@ -462,7 +489,7 @@ function updateObstacles(deltaTime, effectiveSpeed = gameSpeed) {
 
     for (let i = obstacles.length - 1; i >= 0; i--) {
         const obstacle = obstacles[i];
-        obstacle.x -= effectiveSpeed;
+        obstacle.x -= effectiveSpeed * dt60;
 
         if (obstacle.x + obstacle.width < player.x && !obstacle.passed && obstacle.type === 'ground') {
             obstacle.passed = true;
@@ -478,23 +505,18 @@ function updateObstacles(deltaTime, effectiveSpeed = gameSpeed) {
 
 // ─── Collision Detection (AABB, center-scaled hitboxes) ───────────────────────
 function checkCollision(rect1, rect2) {
-    const getCenterBox = (rect, isPlayer) => {
-        const s = isPlayer ? 0.48 : 0.7;
-        const w = rect.width * s;
-        const h = rect.height * s;
-        return {
-            x: rect.x + (rect.width - w) / 2,
-            y: rect.y + (rect.height - h) / 2,
-            width: w,
-            height: h
-        };
-    };
-    const a = getCenterBox(rect1, true);
-    const b = getCenterBox(rect2, false);
-    return a.x < b.x + b.width &&
-           a.x + a.width > b.x &&
-           a.y < b.y + b.height &&
-           a.y + a.height > b.y;
+    const aw = rect1.width * 0.48;
+    const ah = rect1.height * 0.48;
+    const ax = rect1.x + (rect1.width - aw) / 2;
+    const ay = rect1.y + (rect1.height - ah) / 2;
+    const bw = rect2.width * 0.7;
+    const bh = rect2.height * 0.7;
+    const bx = rect2.x + (rect2.width - bw) / 2;
+    const by = rect2.y + (rect2.height - bh) / 2;
+    return ax < bx + bw &&
+           ax + aw > bx &&
+           ay < by + bh &&
+           ay + ah > by;
 }
 
 // ─── Check Collisions ─────────────────────────────────────────────────────────
@@ -516,7 +538,8 @@ function checkGameOver() {
                 setTimeout(() => canvas.classList.remove('red-border'), 200);
 
                 showPointPopup(obstacle.x + obstacle.width / 2, obstacle.y + obstacle.height / 2, -2);
-                obstacles = obstacles.filter(obs => obs !== obstacle);
+                const hitIdx = obstacles.indexOf(obstacle);
+                if (hitIdx !== -1) obstacles.splice(hitIdx, 1);
                 return;
             }
         } else if (obstacle.type === 'collectible' && !obstacle.collected) {
@@ -603,12 +626,18 @@ function drawGround(deltaTime, effectiveSpeed = gameSpeed) {
     }
 }
 
+// Pre-rendered background bitmap — drawn once to an offscreen canvas,
+// then blitted each frame with a single fast GPU copy (no gradient recalc)
+const bgCanvas = new OffscreenCanvas(canvas.width, canvas.height);
+const bgCtx = bgCanvas.getContext('2d');
+const bgGradient = bgCtx.createLinearGradient(0, 0, 0, canvas.height);
+bgGradient.addColorStop(0, '#87CEEB');
+bgGradient.addColorStop(1, '#E0F6FF');
+bgCtx.fillStyle = bgGradient;
+bgCtx.fillRect(0, 0, canvas.width, canvas.height);
+
 function drawBackground() {
-    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-    gradient.addColorStop(0, '#87CEEB');
-    gradient.addColorStop(1, '#E0F6FF');
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bgCanvas, 0, 0);
 }
 
 // ─── Game Loop ────────────────────────────────────────────────────────────────
@@ -627,7 +656,6 @@ function gameLoop(currentTime) {
         const timeFormatted = Math.ceil(gameTimer).toString().padStart(2, '0');
         timeLeftElement.textContent = '00:' + timeFormatted;
 
-        const timeDisplay = document.getElementById('timeDisplay');
         timeDisplay.style.background = gameTimer <= 5 ? '#ff6b6b' : '#1B4F91';
     }
     frameCount++;
@@ -635,20 +663,20 @@ function gameLoop(currentTime) {
     if (gameTimer <= 0) {
         playSound('completed');
         setTimeout(() => {
-            sounds.completed.pause();
-            sounds.completed.currentTime = 0;
+            stopSound('completed');
         }, 2000);
         endGame();
         return;
     }
 
+    const dt60 = cappedDelta * 60;
     const speedMultiplier = elapsed < 10 ? 1.5 : 1;
     const currentEffectiveSpeed = gameSpeed * speedMultiplier;
 
-    updatePlayer();
-    updateObstacles(cappedDelta, currentEffectiveSpeed);
+    updatePlayer(dt60);
+    updateObstacles(dt60, currentEffectiveSpeed);
     checkGameOver();
-    if (gameSpeed < maxSpeed) gameSpeed += speedIncrement;
+    if (gameSpeed < maxSpeed) gameSpeed += speedIncrement * dt60;
 
     drawBackground();
     drawObstacles();
@@ -671,12 +699,7 @@ async function startGame() {
         countdownElement.textContent = 'Memuatkan...';
         countdownElement.style.display = 'block';
         countdownElement.style.animation = 'none';
-
-        let attempts = 0;
-        while (!assetsReady && attempts < 50) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-            attempts++;
-        }
+        await assetsReadyPromise;
         countdownElement.style.display = 'none';
     }
 
@@ -714,8 +737,7 @@ async function startGame() {
     await showCountdown(1);
     await showCountdown(0);
 
-    sounds.countdown.pause();
-    sounds.countdown.currentTime = 0;
+    stopSound('countdown');
 
     gameRunning = true;
     lastTime = performance.now();
@@ -730,8 +752,7 @@ async function startGame() {
 
 function endGame() {
     gameRunning = false;
-    sounds.background.pause();
-    sounds.background.currentTime = 0;
+    stopSound('background');
 
     // Release pointer lock
     if (document.pointerLockElement === canvas) {
